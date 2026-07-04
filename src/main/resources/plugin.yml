@@ -1,0 +1,27 @@
+name: TracesDeath
+description: 死亡痕迹插件 - 玩家死亡后将物品存入容器留在原地
+version: '2.0-SNAPSHOT'
+authors:
+  - Polang
+website: https://github.com/PolangPlugin/TracesDeath
+
+main: cc.sbsj.mc.tracesDeath.TracesDeath
+api-version: '26.2'
+load: POSTWORLD
+
+commands:
+  tracesdeath:
+    description: 管理 TracesDeath 死亡痕迹插件
+    usage: /tracesdeath <reload|types|list|info|remove|clear|debug>
+    aliases:
+      - td
+      - deathtrace
+    permission: tracesdeath.admin
+
+permissions:
+  tracesdeath.admin:
+    description: 允许管理 TracesDeath 插件
+    default: op
+  tracesdeath.use:
+    description: 允许使用死亡痕迹功能（默认所有玩家拥有）
+    default: true

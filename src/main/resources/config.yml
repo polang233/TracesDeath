@@ -1,0 +1,117 @@
+# TracesDeath 配置文件
+# 死亡墓碑插件 - 玩家死亡后物品容器管理
+
+debug: false
+
+# === 全局开关 ===
+enabled: true
+
+# === 存储类型选择 ===
+storage:
+  # 可选存储类型:
+  # - block: 使用方块容器（箱子、木桶、潜影盒等）
+  # - minecart: 使用箱子矿车实体
+  # - corpse: 使用玩家头颅盔甲架 + 虚拟背包
+  # - custom_entity: 预留模块（当前 Paper API 不支持自定义实体注册）
+  type: block
+
+# === 死亡处理配置 ===
+death:
+  # 是否无视死亡不掉落规则
+  # true: 即使开启了死亡不掉落，也会创建墓碑
+  # false: 当游戏规则开启死亡不掉落时，不创建墓碑
+  ignore-keep-inventory: false
+  # 是否清除原生物品掉落
+  clear-drops: true
+  # 是否清除经验球掉落
+  clear-experience: false
+  # 是否在创建墓碑时播放音效
+  play-sound: true
+  # 是否在创建墓碑时显示粒子效果
+  show-particles: true
+
+# === 墓碑放置配置 ===
+placement:
+  # 搜索可放置位置的半径（方块）
+  search-radius: 3
+  # 如果找不到合适位置，是否强制放置在死亡点
+  force-place: false
+
+# === 墓碑过期与清理配置 ===
+expiration:
+  # 墓碑存在时间（秒），0 表示永不过期
+  # 建议值: 300 (5分钟), 600 (10分钟), 1800 (30分钟)
+  time-seconds: 600
+  # 自动清理检查间隔（秒）
+  cleanup-interval-seconds: 60
+  # 过期时是否将容器内物品掉落
+  drop-on-expire: true
+  # 是否在墓碑即将过期时警告玩家
+  warn-before-expire: true
+  # 提前多少秒警告
+  warn-time-seconds: 30
+
+# === 墓碑保护配置 ===
+protection:
+  # 是否只有所有者可以打开墓碑容器
+  owner-only: false
+  # 是否允许其他玩家破坏墓碑容器
+  allow-break: false
+  # 是否防止爆炸破坏墓碑容器
+  explosion-proof: true
+
+# === 各存储类型独立配置 ===
+types:
+  # 方块容器配置（仅当 storage.type=block 时生效）
+  block:
+    # 支持的容器类型: CHEST, TRAPPED_CHEST, BARREL, SHULKER_BOX, *_SHULKER_BOX
+    material: CHEST
+    # 拿完物品后是否自动移除容器方块
+    auto-remove-when-empty: true
+    # 是否防止熔岩燃烧容器
+    lava-proof: true
+    # 是否让容器浮在水面和熔岩上（不会下沉）
+    buoyant: true
+    # 交互模式配置
+    interaction:
+      # 交互方式: RIGHT_CLICK (右键), LEFT_CLICK (左键), BOTH (两者皆可)
+      click-type: RIGHT_CLICK
+      # 交互行为: OPEN_GUI (打开界面), DIRECT_COLLECT (直接获取到身上)
+      mode: OPEN_GUI
+      # 当选择 DIRECT_COLLECT 时，是否自动装备可穿戴物品
+      auto-equip: true
+      # 当玩家已有装备/手持物品时的处理方式:
+      # DROP (丢地上), TRY_INVENTORY (尝试放入背包，满了再丢地上)
+      conflict-handling: TRY_INVENTORY
+  
+  # 箱子矿车配置（仅当 storage.type=minecart 时生效）
+  minecart:
+    # 矿车实体类型
+    entity-type: CHEST_MINECART
+    # 拿完物品后是否自动移除矿车实体
+    auto-remove-when-empty: true
+    # 是否防止熔岩伤害矿车
+    lava-proof: true
+    # 是否让矿车浮在水面和熔岩上
+    buoyant: true
+    # 交互模式配置
+    interaction:
+      click-type: RIGHT_CLICK
+      mode: OPEN_GUI
+      auto-equip: true
+      conflict-handling: TRY_INVENTORY
+  
+  # 尸体实体配置（仅当 storage.type=corpse 时生效）
+  corpse:
+    # 拿完物品后是否自动移除尸体实体
+    auto-remove-when-empty: true
+    # 是否防止熔岩伤害尸体
+    lava-proof: true
+    # 是否让尸体浮在水面和熔岩上
+    buoyant: true
+    # 交互模式配置
+    interaction:
+      click-type: RIGHT_CLICK
+      mode: OPEN_GUI
+      auto-equip: true
+      conflict-handling: TRY_INVENTORY

@@ -1,0 +1,39 @@
+prefix: "&7[&c死亡墓碑&7] &r"
+
+command:
+  no-permission: "&c你没有权限使用该命令。"
+  reload: "&a配置和语言文件已重载。"
+  types: "&a已注册类型: &f{types}"
+  player-only: "&c该调试命令只能由玩家执行。"
+  usage-reload: "&e用法: /{label} reload - 重载配置"
+  usage-types: "&e用法: /{label} types - 查看可用存储类型"
+  usage-list: "&e用法: /{label} list [玩家名] - 列出活动墓碑"
+  usage-info: "&e用法: /{label} info <墓碑ID> - 查看墓碑详情"
+  usage-remove: "&e用法: /{label} remove <墓碑ID> [掉落物品] - 移除指定墓碑"
+  usage-clear: "&e用法: /{label} clear - 清除所有墓碑"
+  usage-debug-create: "&e用法: /{label} debug create - 在当前位置创建测试墓碑"
+
+storage:
+  display-name: "{player} 的墓碑"
+  inventory-title: "墓碑"
+  unsupported-type: "&c没有找到支持该配置的墓碑类型: {type}"
+  block:
+    no-place: "&c附近没有可替换的方块位置。"
+    not-container: "&c{material} 不是可用容器方块。"
+    created: "&a已生成方块容器: &f{material}"
+  minecart:
+    spawn-failed: "&c当前服务端无法生成箱子矿车容器。"
+    created: "&a已生成箱子矿车容器。"
+  corpse:
+    created: "&a已生成玩家外观实体容器。"
+  custom-entity:
+    unavailable: "&c当前 Paper API 未暴露稳定的通用自定义实体注册入口，已保留独立模块位。"
+
+# GUI界面相关消息
+gui:
+  title: "{player} 的遗物"
+
+# 墓碑过期相关消息
+expiration:
+  warning: "&e你的墓碑将在 {seconds} 秒后消失！"
+  expired: "&7你的墓碑已消失。"
