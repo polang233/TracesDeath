@@ -37,19 +37,11 @@ expiration:
   cleanup-interval-seconds: 60
   # 过期时是否将容器内物品掉落
   drop-on-expire: true
-  # 是否在墓碑即将过期时警告玩家
-  warn-before-expire: true
-  # 提前多少秒警告
-  warn-time-seconds: 30
 
 # === 墓碑保护配置 ===
 protection:
   # 是否只有所有者可以打开墓碑容器
   owner-only: false
-  # 是否允许其他玩家破坏墓碑容器
-  allow-break: false
-  # 是否防止爆炸破坏墓碑容器
-  explosion-proof: true
 
 # === 统一交互限制 ===
 interaction:

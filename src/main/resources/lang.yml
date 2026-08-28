@@ -44,8 +44,3 @@ interaction:
   not-owner: "&c你不能打开其他玩家的墓碑。"
   inventory-full: "&e背包空间不足，墓碑中仍有 {remaining} 个物品。"
   collected: "&a已放入背包 {moved} 个，掉落 {dropped} 个，墓碑剩余 {remaining} 个。"
-
-# 墓碑过期相关消息
-expiration:
-  warning: "&e你的墓碑将在 {seconds} 秒后消失！"
-  expired: "&7你的墓碑已消失。"

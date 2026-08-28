@@ -29,13 +29,9 @@ public final class TraceConfig {
     private final long traceExpirationMillis;
     private final long cleanupIntervalTicks;
     private final boolean dropOnExpire;
-    private final boolean warnBeforeExpire;
-    private final long warnTimeSeconds;
     
     // 保护配置
     private final boolean ownerOnly;
-    private final boolean allowBreak;
-    private final boolean explosionProof;
     private final double interactionDistanceSquared;
     
     // 各类型独立配置
@@ -64,13 +60,9 @@ public final class TraceConfig {
         long cleanupIntervalSeconds = Math.max(10, config.getLong("expiration.cleanup-interval-seconds", 60));
         this.cleanupIntervalTicks = cleanupIntervalSeconds * 20;
         this.dropOnExpire = config.getBoolean("expiration.drop-on-expire", true);
-        this.warnBeforeExpire = config.getBoolean("expiration.warn-before-expire", true);
-        this.warnTimeSeconds = Math.max(5, config.getLong("expiration.warn-time-seconds", 30));
         
         // 保护配置
         this.ownerOnly = config.getBoolean("protection.owner-only", false);
-        this.allowBreak = config.getBoolean("protection.allow-break", false);
-        this.explosionProof = config.getBoolean("protection.explosion-proof", true);
         double interactionDistance = Math.max(1.0, config.getDouble("interaction.max-distance", 7.0));
         this.interactionDistanceSquared = interactionDistance * interactionDistance;
         
@@ -137,28 +129,12 @@ public final class TraceConfig {
         return dropOnExpire;
     }
     
-    public boolean warnBeforeExpire() {
-        return warnBeforeExpire;
-    }
-    
-    public long warnTimeSeconds() {
-        return warnTimeSeconds;
-    }
-
     // === 保护配置 ===
     
     public boolean ownerOnly() {
         return ownerOnly;
     }
     
-    public boolean allowBreak() {
-        return allowBreak;
-    }
-    
-    public boolean explosionProof() {
-        return explosionProof;
-    }
-
     public double interactionDistanceSquared() {
         return interactionDistanceSquared;
     }

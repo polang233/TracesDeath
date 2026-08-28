@@ -15,10 +15,10 @@ TracesDeath 的首个可发布版本只承诺一条稳定链路：
 
 本版本采用“一个墓碑记录、一份权威物品数据、一个存储适配器”的原则：
 
-- block 是唯一稳定存储类型，方块只负责展示和被识别，物品统一存放在墓碑记录中。
+- mannequin 是默认主类型：Mannequin 负责玩家外观，独立 Interaction 实体负责稳定点击；block 作为兼容回退。
 - 普通右键打开 GUI；潜行右键执行快速领取。两种入口共享同一套领取逻辑。
 - 服务器重启、配置重载、GUI 关闭、断线、过期和管理员移除都必须满足物品不丢失、不复制。
-- minecart、corpse、mannequin 和 custom_entity 暂不属于稳定版；在没有通过同一套物品守恒测试前，不应出现在默认可用功能中。
+- minecart、corpse 和 custom_entity 已从当前运行时移除，后续只有重新立项并通过同一套守恒测试才会恢复。
 
 当前需求文档不再把“已有类、已有配置项”和“已验收能力”混为一谈。存在代码只代表有实现痕迹，不代表可以发布。
 
@@ -80,11 +80,11 @@ TracesDeath 采用以下借鉴结论：
 | 缓存持久化 | TraceCacheManager 使用内存缓存加墓碑 YAML 文件 | 有基本恢复能力，但无 schema、原子写入，异步任务直接操作 Bukkit 对象 |
 | 生命周期 | TraceManager 支持活动索引、定时过期和管理员移除 | 删除顺序、过期提醒、实体/方块校验和幂等性不足 |
 | 管理命令 | 支持 reload/types/list/info/remove/clear/debug create | 基础命令存在，但消息硬编码、只识别完整 UUID，权限粒度不足 |
-| 保护事件 | 已覆盖部分火焰/熔岩事件 | allow-break、爆炸保护、浮力和按墓碑类型读取配置尚未闭环 |
-| 实体提供者 | 已有矿车、盔甲架尸体和 Mannequin 提供者 | 数据链路不统一，不能作为稳定版能力 |
+| 保护事件 | Mannequin 伤害、死亡掉落、火焰和熔岩已拦截 | block 回退类型只保留基础熔岩保护 |
+| 实体提供者 | 只保留 Mannequin，并用 Interaction 作为点击代理 | 两个实体 UUID 均持久化、重启校验并统一删除 |
 | 测试 | 仓库没有测试源码 | 物品守恒和重启恢复没有自动化发布门槛 |
 
-### 3.2 当前最重要的结构性问题
+### 3.2 重基线时发现的结构性问题
 
 1. 方块使用缓存，矿车使用实体原生库存，尸体还写入实体 PDC，形成多份物品副本。
 2. TraceManager 先放置世界对象，再写持久化数据；写入失败时可能留下墓碑而死亡事件仍被清空。
@@ -97,12 +97,21 @@ TracesDeath 采用以下借鉴结论：
 9. 现有 clear-drops=false 会让缓存物品和原生掉落同时存在，属于明确的复制风险。
 10. 现有 force-place=true 可能覆盖死亡点的重要方块；稳定版不能以“强制放置”换取创建成功。
 
+### 3.3 首轮实施状态
+
+- 已移除矿车、盔甲架尸体、自定义实体占位和对应的第二库存链路。
+- Mannequin 与 Interaction 点击代理成对创建，并持久化两个实体 UUID。
+- NPC 删除会清空视觉装备、删除两个实体；区块重新加载时会清理孤儿或补齐缺失实体。
+- 方块和 NPC 共用访问检查、分页只取 GUI、快速领取和实际库存差额结算。
+- 初次数据写入使用临时文件原子替换；失败时回滚世界对象并保留原生死亡掉落。
+- 已加入配置、数据隔离和提供者元数据单元测试。
+
 ## 4. 发布范围和阶段
 
-### P0：稳定方块墓碑闭环
+### P0：稳定 Mannequin 墓碑闭环
 
 - 只接管物品，不处理经验；在经验存储完成前不得清除死亡经验。
-- 只启用 block，使用方块作为墓碑外观和 PDC 标记。
+- 默认启用 mannequin，持久化视觉实体和交互代理 UUID；block 仅作兼容回退。
 - 一个墓碑记录作为物品唯一权威来源。
 - 支持安全创建、GUI 领取、潜行快速领取、过期、停服保存、重启恢复和管理员处理。
 - 所有关键操作都有自动化测试和 Paper 测试服回归用例。
@@ -116,9 +125,9 @@ TracesDeath 采用以下借鉴结论：
 - 到期预警、掉落表现、可选全息提示。
 - 更细的管理权限和管理员审计日志。
 
-### P2：实体外观和替代存储
+### P2：替代存储重新立项
 
-按顺序单独验收 mannequin、corpse、minecart。每种类型必须复用 P0 的 GraveRecord、领取服务、持久化、保护和清理协议，不能重新引入实体原生库存或第二份 PDC 物品。
+corpse、minecart 或其他实体类型若重新加入，必须复用 P0 的 GraveRecord、领取服务、持久化、保护和清理协议，不能重新引入实体原生库存或第二份 PDC 物品。
 
 custom_entity 继续作为不可用占位，不得静默回退到其他类型。
 
@@ -181,16 +190,16 @@ custom_entity 继续作为不可用占位，不得静默回退到其他类型。
 |---|---|---:|---|
 | FR-001 | 全局开关和使用权限 | P0 | 关闭或无 tracesdeath.use 时保留原生死亡行为；已有墓碑仍可按管理策略处理 |
 | FR-002 | 安全死亡快照 | P0 | 创建使用深拷贝，保留所有物品属性和数量 |
-| FR-003 | 原子创建 | P0 | 方块、记录、内存索引成功后才清除原生掉落；失败则完全回滚 |
-| FR-004 | 安全选址 | P0 | 不覆盖重要方块；无合法位置时不创建墓碑、不清掉落 |
-| FR-005 | 单一权威库存 | P0 | 同一批物品只存在于 GraveRecord，方块不保存可领取物品 |
+| FR-003 | 原子创建 | P0 | 世界对象、记录、内存索引成功后才清除原生掉落；失败则完全回滚 |
+| FR-004 | 安全生成 | P0 | Mannequin 与 Interaction 成对生成；任一失败时全部回滚 |
+| FR-005 | 单一权威库存 | P0 | 同一批物品只存在于 GraveRecord，NPC 装备只是不可掉落视觉副本 |
 | FR-006 | 右键 GUI | P0 | 7 方块内可打开；所有物品可访问；只允许取出 |
 | FR-007 | 潜行快速领取 | P0 | 按实际库存差额处理；装备、背包、剩余和掉落数量准确 |
 | FR-008 | 墓碑会话锁 | P0 | 同一墓碑只能有一个写入会话，不发生覆盖或复制 |
 | FR-009 | 空墓碑清理 | P0 | 物品全部取完后按墓碑创建时的策略终结 |
 | FR-010 | 过期处理 | P0 | 绝对时间、一次性 drop/delete、终结后不重复处理 |
 | FR-011 | 停服和重启恢复 | P0 | 正常停服不删除活动墓碑；重启可查询和领取 |
-| FR-012 | 保护 | P0 | 默认禁止破坏和爆炸破坏；配置关闭时也按明确的掉落/终结策略处理 |
+| FR-012 | NPC 保护 | P0 | Mannequin 不受普通伤害，异常死亡不掉视觉装备，外部删除后自动补齐 |
 | FR-013 | 本地化 | P0 | 玩家消息、命令反馈和关键错误均来自 lang.yml |
 | FR-014 | 管理命令 | P0 | 管理员可 reload、list、info、remove、clear、debug；操作幂等 |
 | FR-015 | 物品守恒测试 | P0 | 创建、失败、部分领取、重启、过期、移除和重复操作全部通过 |
@@ -199,7 +208,7 @@ custom_entity 继续作为不可用占位，不得静默回退到其他类型。
 | FR-103 | 玩家墓碑上限 | P1 | 超过上限时按最旧优先处理，并按配置 drop/delete |
 | FR-104 | 定位和提醒 | P1 | 玩家可查询自己的位置和剩余时间；预警只发送一次 |
 | FR-105 | 细分权限 | P1 | list、locate、其他玩家查询、传送/移除、所有者绕过分别授权 |
-| FR-201 | Mannequin 外观 | P2 | 仅展示皮肤和装备视觉副本，不拥有可领取物品 |
+| FR-016 | Mannequin 外观和代理 | P0 | 展示皮肤和装备视觉副本；Interaction 提供稳定命中区域；二者一起删除 |
 | FR-202 | 尸体实体 | P2 | 统一使用 GraveRecord，不再写入第二份实体库存 |
 | FR-203 | 箱子矿车 | P2 | 处理移动、区块卸载、实体恢复和原生库存拦截后才可启用 |
 | FR-204 | 扩展提供者接口 | P2 | 提供者返回实际位置、句柄和能力；不允许按当前全局类型猜测旧墓碑行为 |
@@ -254,8 +263,10 @@ CREATING → ACTIVE → CLAIMED / EXPIRED / REMOVED / ORPHANED → TERMINAL
 | 配置 | 默认 | 说明 |
 |---|---:|---|
 | enabled | true | 是否接管新死亡 |
-| storage.type | block | P0 只允许 block；不支持的值启动时告警并停止接管 |
-| storage.block.material | CHEST | 必须是已知容器方块 |
+| storage.type | mannequin | 默认使用高版本玩家模型 NPC；block 是兼容回退 |
+| storage.block.material | CHEST | block 回退类型必须使用已知容器方块 |
+| types.mannequin.hitbox.width | 1.8 | Interaction 点击区域宽度 |
+| types.mannequin.hitbox.height | 1.2 | Interaction 点击区域高度 |
 | death.override-keep-inventory | false | P0 只支持尊重 keepInventory；P1 再实现覆盖 |
 | death.disabled-worlds | [] | P1 |
 | death.blacklisted-causes | [] | P1 |
@@ -264,25 +275,21 @@ CREATING → ACTIVE → CLAIMED / EXPIRED / REMOVED / ORPHANED → TERMINAL
 | grave.expiration-seconds | 600 | 0 表示永不过期 |
 | grave.despawn-when-empty | true | 取空后移除标记和记录 |
 | grave.drop-on-expire | true | 到期掉落，否则销毁并记录 |
-| grave.warn-before-expire | true | P1 |
-| grave.warn-time-seconds | 30 | 必须小于有效过期时间 |
 | grave.max-per-player | -1 | P1，-1 表示不限制 |
 | interaction.distance | 7 | 最大交互距离 |
 | interaction.instant-pickup | true | 是否启用潜行右键快速领取 |
 | interaction.auto-equip-armor | true | 快速领取时仅填充空装备槽 |
 | interaction.leftover | KEEP | KEEP 留在墓碑，DROP 掉落实际剩余量 |
 | protection.owner-only | false | 是否只允许所有者和管理员绕过者领取 |
-| protection.allow-break | false | 允许破坏时必须先结算剩余物品再终结 |
-| protection.explosion-proof | true | 是否从爆炸影响中移除墓碑标记 |
 | save.auto-save-seconds | 30 | 周期快照；变更仍需立即写入或进入可靠写队列 |
 
 建议删除或暂时废弃：
 
-- death.clear-drops：稳定版创建成功后固定清除，不能允许复制语义。
-- death.clear-experience：当前没有经验墓碑，继续保留会产生经验丢失风险。
+- death.clear-drops：已删除；稳定版创建成功后固定清除，不能允许复制语义。
+- death.clear-experience：已删除；当前没有经验墓碑，经验保持原版行为。
 - placement.force-place：不能用覆盖重要方块来保证创建。
-- types.*.buoyant：当前没有可观察实现，应删除，待未来明确水/熔岩语义后再设计。
-- types.*.interaction 的多套类型分支：P0 只保留稳定方块配置；实体类型独立验收。
+- types.*.buoyant：已删除，待未来明确水/熔岩语义后再设计。
+- minecart、corpse 和 custom_entity 配置：已从默认配置和运行时注册中删除。
 
 配置重载规则：
 
@@ -338,13 +345,13 @@ CREATING → ACTIVE → CLAIMED / EXPIRED / REMOVED / ORPHANED → TERMINAL
 - 其他插件或管理员直接移除墓碑方块后的孤儿记录。
 - 区块未加载时不强制加载大量区块；重新加载后再校验或恢复。
 
-默认策略：
+当前策略：
 
-- allow-break=false：阻止普通玩家破坏墓碑。
-- allow-break=true：把破坏视为一次终结操作，按 drop 策略结算剩余物品，随后删除记录。
-- explosion-proof=true：墓碑不受爆炸破坏。
-- 禁止通过漏斗或原生容器库存绕过虚拟墓碑库存。
-- 领地插件兼容不作为 P0 强依赖；至少不能因为检测不到外部插件而覆盖不可替换方块。
+- Mannequin 和 Interaction 的玩家伤害事件始终取消。
+- Mannequin 异常进入死亡事件时清空掉落和经验；活动墓碑会取消死亡并补齐实体。
+- 外部移除活动 NPC 后按墓碑 UUID 重新校验并补齐；数据已不存在的实体在区块加载时删除。
+- block 只作为兼容回退，禁止通过原生容器库存绕过虚拟墓碑库存。
+- 领地插件兼容不作为 P0 强依赖。
 
 ## 12. 验收用例
 
@@ -364,8 +371,8 @@ CREATING → ACTIVE → CLAIMED / EXPIRED / REMOVED / ORPHANED → TERMINAL
 | AC-012 | 到期且配置 drop | 剩余物品只掉落一次，容器和记录终结 |
 | AC-013 | 管理员重复执行 remove/clear | 第一次处理，后续不重复掉落并返回已处理/不存在 |
 | AC-014 | 外部删除墓碑方块 | 记录保留并标记异常，可恢复或由管理员处理 |
-| AC-015 | 配置从 block 重载为实验类型 | 旧墓碑仍按记录类型交互；不清空、不重新生成、不改变创建时间 |
-| AC-016 | 选择 minecart/corpse/mannequin/custom_entity | 未启用类型明确告警并保留原生死亡掉落，不静默回退 |
+| AC-015 | 配置从 mannequin 重载为 block | 旧墓碑仍按记录类型交互；不清空、不重新生成、不改变创建时间 |
+| AC-016 | 选择未注册类型 | 明确告警并保留原生死亡掉落，不静默回退 |
 | AC-017 | 所有稳定命令和玩家提示 | 消息可从 lang.yml 修改，控制台和玩家反馈均可定位问题 |
 
 发布门槛：所有 P0 需求和 AC-001 至 AC-017 通过；不存在已知物品复制、物品无恢复路径或创建失败仍清掉落的问题。
@@ -390,7 +397,7 @@ CREATING → ACTIVE → CLAIMED / EXPIRED / REMOVED / ORPHANED → TERMINAL
 - 重启恢复、区块卸载/加载、火焰、熔岩、爆炸、漏斗、活塞和流体。
 - 真实玩家库存部分堆叠、装备冲突和断线。
 - 1,000 个活动记录的清理和保存性能基线。
-- 每种 P2 存储类型通过完整矩阵后才能单独打开开关。
+- 任何重新加入的 P2 存储类型通过完整矩阵后才能单独打开开关。
 
 ## 14. 实施顺序
 
@@ -398,7 +405,7 @@ CREATING → ACTIVE → CLAIMED / EXPIRED / REMOVED / ORPHANED → TERMINAL
 
 1. 将 TraceData 升级为完整 GraveRecord，加入状态、到期时间、schema 和权威库存。
 2. 将所有领取和终结入口集中到服务层。
-3. 明确 P0 只注册 block，移除或禁用不安全实体路径。
+3. P0 只注册 mannequin 和 block，移除旧矿车、盔甲架尸体与占位实体路径。
 
 ### 阶段 B：修复稳定主链路
 
@@ -415,13 +422,13 @@ CREATING → ACTIVE → CLAIMED / EXPIRED / REMOVED / ORPHANED → TERMINAL
 
 ### 阶段 D：逐个评审扩展
 
-先评审 Mannequin 外观，再评审尸体和矿车。每次只启用一个新提供者，完成数据、交互、保护、恢复和物品守恒矩阵后再进入可选稳定能力。
+当前不继续扩展提供者。未来若恢复尸体或矿车，每次只启用一个新提供者，完成数据、交互、保护、恢复和物品守恒矩阵后再进入可选能力。
 
 ## 15. 待确认决策（附推荐值）
 
 | 事项 | 推荐值 | 原因 |
 |---|---|---|
-| 稳定版默认存储 | block | 当前最接近可闭环，服务端行为最容易验证 |
+| 稳定版默认存储 | mannequin | 符合项目目标；Interaction 代理解决躺卧 NPC 难点击问题 |
 | GUI 是否允许存入 | 不允许 | 降低复制、误操作和外部库存绕过风险 |
 | keepInventory 覆盖 | P1，默认关闭 | 需要与第三方死亡插件共同验证 |
 | XP 是否进入 P0 | 不进入，P1 实现 | 当前代码不保存 XP，不能继续保留“清除经验”开关 |
