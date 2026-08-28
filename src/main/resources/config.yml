@@ -15,14 +15,7 @@ storage:
 
 # === 死亡处理配置 ===
 death:
-  # 是否无视死亡不掉落规则
-  # true: 即使开启了死亡不掉落，也会创建墓碑
-  # false: 当游戏规则开启死亡不掉落时，不创建墓碑
-  ignore-keep-inventory: false
-  # 是否清除原生物品掉落
-  clear-drops: true
-  # 是否清除经验球掉落
-  clear-experience: false
+  # 当前版本始终尊重 keepInventory；经验保持原版掉落行为
   # 是否在创建墓碑时播放音效
   play-sound: true
   # 是否在创建墓碑时显示粒子效果

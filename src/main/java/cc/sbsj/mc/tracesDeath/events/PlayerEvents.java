@@ -32,11 +32,12 @@ public class PlayerEvents implements Listener {
         if (!plugin.traceConfig().enabled()) {
             return;
         }
-        
-        // 检查死亡不掉落规则
-        boolean keepInventory = event.getKeepInventory();
-        if (keepInventory && !plugin.traceConfig().ignoreKeepInventory()) {
-            // 开启了死亡不掉落且未配置无视，跳过创建墓碑
+        if (!event.getPlayer().hasPermission("tracesdeath.use")) {
+            return;
+        }
+
+        // 当前稳定语义始终尊重 keepInventory。
+        if (event.getKeepInventory()) {
             if (plugin.traceConfig().debug()) {
                 plugin.getLogger().info("跳过墓碑创建：游戏规则 keepInventory=true");
             }
@@ -60,15 +61,8 @@ public class PlayerEvents implements Listener {
             return;
         }
 
-        // 清除原生物品掉落
-        if (plugin.traceConfig().clearDrops()) {
-            event.getDrops().clear();
-        }
-        
-        // 清除经验球
-        if (plugin.traceConfig().clearExperience()) {
-            event.setDroppedExp(0);
-        }
+        // 创建及初次持久化都成功后固定清除原生掉落，避免复制。
+        event.getDrops().clear();
         
         // 播放音效
         if (plugin.traceConfig().playSound()) {

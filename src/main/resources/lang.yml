@@ -17,6 +17,7 @@ storage:
   display-name: "{player} 的墓碑"
   inventory-title: "墓碑"
   unsupported-type: "&c没有找到支持该配置的墓碑类型: {type}"
+  persistence-failed: "&c墓碑数据保存失败，已保留原生死亡掉落。"
   block:
     no-place: "&c附近没有可替换的方块位置。"
     not-container: "&c{material} 不是可用容器方块。"

@@ -22,6 +22,9 @@ permissions:
   tracesdeath.admin:
     description: 允许管理 TracesDeath 插件
     default: op
+  tracesdeath.admin.bypass:
+    description: 允许绕过墓碑所有者限制
+    default: op
   tracesdeath.use:
     description: 允许使用死亡痕迹功能（默认所有玩家拥有）
     default: true

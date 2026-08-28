@@ -18,9 +18,6 @@ public final class TraceConfig {
     private final String storageType;
     
     // 死亡处理配置
-    private final boolean ignoreKeepInventory;
-    private final boolean clearDrops;
-    private final boolean clearExperience;
     private final boolean playSound;
     private final boolean showParticles;
     
@@ -51,12 +48,9 @@ public final class TraceConfig {
         this.enabled = config.getBoolean("enabled", true);
         
         // 存储配置
-        this.storageType = config.getString("storage.type", "block").toLowerCase(Locale.ROOT);
+        this.storageType = config.getString("storage.type", "mannequin").toLowerCase(Locale.ROOT);
         
         // 死亡处理配置
-        this.ignoreKeepInventory = config.getBoolean("death.ignore-keep-inventory", false);
-        this.clearDrops = config.getBoolean("death.clear-drops", true);
-        this.clearExperience = config.getBoolean("death.clear-experience", false);
         this.playSound = config.getBoolean("death.play-sound", true);
         this.showParticles = config.getBoolean("death.show-particles", true);
         
@@ -102,18 +96,6 @@ public final class TraceConfig {
     }
 
     // === 死亡处理配置 ===
-    
-    public boolean ignoreKeepInventory() {
-        return ignoreKeepInventory;
-    }
-    
-    public boolean clearDrops() {
-        return clearDrops;
-    }
-
-    public boolean clearExperience() {
-        return clearExperience;
-    }
     
     public boolean playSound() {
         return playSound;

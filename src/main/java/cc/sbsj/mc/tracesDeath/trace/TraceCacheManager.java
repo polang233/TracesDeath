@@ -3,6 +3,9 @@ package cc.sbsj.mc.tracesDeath.trace;
 import cc.sbsj.mc.tracesDeath.TracesDeath;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,14 +42,14 @@ public final class TraceCacheManager {
         // 启动时加载所有保存的墓碑数据
         loadAllTraces();
         
-        // 定期自动保存（每5分钟）
-        Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::saveAllTraces, 6000L, 6000L);
+        // ItemStack 属于 Bukkit 对象，周期快照在主线程完成。
+        Bukkit.getScheduler().runTaskTimer(plugin, this::saveAllTraces, 6000L, 6000L);
     }
     
     /**
      * 创建新的墓碑数据
      */
-    @NotNull
+    @Nullable
     public TraceData createTrace(@NotNull UUID traceId, @NotNull UUID playerId, 
                                   @NotNull String playerName, @NotNull Location location,
                                   @NotNull List<ItemStack> items, @NotNull String storageType,
@@ -56,7 +59,10 @@ public final class TraceCacheManager {
         cache.put(traceId, data);
         
         // 立即保存到文件
-        saveTrace(traceId);
+        if (!saveTrace(traceId)) {
+            cache.remove(traceId);
+            return null;
+        }
         
         if (plugin.traceConfig().debug()) {
             plugin.getLogger().info("创建墓碑缓存: " + traceId + " | 物品数量: " + items.size());
@@ -82,7 +88,12 @@ public final class TraceCacheManager {
             // 删除对应的文件
             File file = getTraceFile(traceId);
             if (file.exists()) {
-                file.delete();
+                try {
+                    Files.delete(file.toPath());
+                } catch (IOException exception) {
+                    plugin.getLogger().severe(
+                            "删除墓碑数据失败: " + traceId + " - " + exception.getMessage());
+                }
             }
             
             if (plugin.traceConfig().debug()) {
@@ -141,13 +152,14 @@ public final class TraceCacheManager {
     /**
      * 保存单个墓碑到文件
      */
-    private void saveTrace(@NotNull UUID traceId) {
+    private synchronized boolean saveTrace(@NotNull UUID traceId) {
         TraceData data = cache.get(traceId);
         if (data == null) {
-            return;
+            return false;
         }
         
         File file = getTraceFile(traceId);
+        File temporaryFile = new File(dataFolder, traceId + ".yml.tmp");
         YamlConfiguration config = new YamlConfiguration();
         
         config.set("schema-version", 2);
@@ -165,9 +177,29 @@ public final class TraceCacheManager {
         config.set("items", data.items());
         
         try {
-            config.save(file);
+            config.save(temporaryFile);
+            try {
+                Files.move(
+                        temporaryFile.toPath(),
+                        file.toPath(),
+                        StandardCopyOption.ATOMIC_MOVE,
+                        StandardCopyOption.REPLACE_EXISTING
+                );
+            } catch (AtomicMoveNotSupportedException ignored) {
+                Files.move(
+                        temporaryFile.toPath(),
+                        file.toPath(),
+                        StandardCopyOption.REPLACE_EXISTING
+                );
+            }
+            return true;
         } catch (IOException e) {
             plugin.getLogger().severe("保存墓碑数据失败: " + traceId + " - " + e.getMessage());
+            try {
+                Files.deleteIfExists(temporaryFile.toPath());
+            } catch (IOException ignored) {
+            }
+            return false;
         }
     }
     

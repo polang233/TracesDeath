@@ -86,16 +86,33 @@ public final class TraceManager {
         PlacementResult result = storageRegistry.place(context);
         if (result.success()) {
             Location placedLocation = result.location() == null ? location.clone() : result.location();
-            // 保存物品到缓存
-            cacheManager.createTrace(traceId, player.getUniqueId(), player.getName(), 
+            TraceData data = cacheManager.createTrace(traceId, player.getUniqueId(), player.getName(),
                     placedLocation, drops.stream().toList(), context.config().storageType(), result.storageData());
+            if (data == null) {
+                TraceStorageProvider provider =
+                        storageRegistry.find(context.config().storageType()).orElse(null);
+                if (provider != null) {
+                    TraceData placementData = new TraceData(
+                            traceId,
+                            player.getUniqueId(),
+                            player.getName(),
+                            placedLocation,
+                            drops.stream().toList(),
+                            System.currentTimeMillis(),
+                            context.config().storageType(),
+                            result.storageData()
+                    );
+                    provider.cleanup(placementData);
+                }
+                return PlacementResult.failure(plugin.lang().text("storage.persistence-failed"));
+            }
             
             TraceInfo info = new TraceInfo(
                     traceId,
                     player.getUniqueId(),
                     player.getName(),
                     placedLocation,
-                    System.currentTimeMillis(),
+                    data.creationTime(),
                     context.config().storageType()
             );
             activeTraces.put(traceId, info);
