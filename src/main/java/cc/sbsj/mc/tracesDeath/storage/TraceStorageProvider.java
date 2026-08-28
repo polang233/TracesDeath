@@ -2,6 +2,7 @@ package cc.sbsj.mc.tracesDeath.storage;
 
 import cc.sbsj.mc.tracesDeath.trace.TraceContext;
 import cc.sbsj.mc.tracesDeath.trace.TraceData;
+import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -53,6 +54,17 @@ public interface TraceStorageProvider {
      */
     default boolean isValid(@NotNull TraceData data) {
         return true;
+    }
+
+    /**
+     * 校验并修复已经加载的墓碑世界对象。
+     *
+     * @param data 墓碑权威数据
+     * @return 修复后的提供者元数据
+     */
+    @NotNull
+    default Map<String, String> reconcile(@NotNull TraceData data) {
+        return data.storageData();
     }
     
     /**

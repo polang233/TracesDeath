@@ -24,12 +24,18 @@ storage:
   mannequin:
     spawn-failed: "&c当前服务端无法生成玩家模型实体。"
     created: "&a已生成玩家模型墓碑。"
+    orphan-removed: "已移除没有墓碑记录的 Mannequin 实体: {role}"
   custom-entity:
     unavailable: "&c当前 Paper API 未暴露稳定的通用自定义实体注册入口，已保留独立模块位。"
 
 # GUI界面相关消息
 gui:
   title: "{player} 的遗物"
+
+interaction:
+  missing: "&c该墓碑的数据不存在或已经结束。"
+  too-far: "&c距离墓碑太远，无法交互。"
+  not-owner: "&c你不能打开其他玩家的墓碑。"
 
 # 墓碑过期相关消息
 expiration:

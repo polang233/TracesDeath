@@ -4,7 +4,7 @@ import cc.sbsj.mc.tracesDeath.commands.TracesDeathCommand;
 import cc.sbsj.mc.tracesDeath.config.Lang;
 import cc.sbsj.mc.tracesDeath.config.TraceConfig;
 import cc.sbsj.mc.tracesDeath.events.PlayerEvents;
-import cc.sbsj.mc.tracesDeath.events.TraceEntityInteractEvents;
+import cc.sbsj.mc.tracesDeath.events.MannequinEvents;
 import cc.sbsj.mc.tracesDeath.events.TraceInteractEvents;
 import cc.sbsj.mc.tracesDeath.events.TraceProtectionEvents;
 import cc.sbsj.mc.tracesDeath.gui.TraceGuiManager;
@@ -41,7 +41,7 @@ public final class TracesDeath extends JavaPlugin {
         TraceKeys keys = new TraceKeys(this);
         storageRegistry = new TraceStorageRegistry();
         storageRegistry.register(new BlockContainerTraceProvider(keys));
-        storageRegistry.register(new MannequinTraceProvider(keys));
+        storageRegistry.register(new MannequinTraceProvider(this, keys));
 
         // 初始化墓碑缓存管理器
         cacheManager = new TraceCacheManager(this);
@@ -57,7 +57,7 @@ public final class TracesDeath extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerEvents(this, traceManager), this);
         getServer().getPluginManager().registerEvents(new TraceProtectionEvents(this, keys), this);
         getServer().getPluginManager().registerEvents(new TraceInteractEvents(this, keys, guiManager, cacheManager), this);
-        getServer().getPluginManager().registerEvents(new TraceEntityInteractEvents(this, keys, guiManager, cacheManager), this);
+        getServer().getPluginManager().registerEvents(new MannequinEvents(this, keys, guiManager, cacheManager), this);
 
         // 注册命令
         TracesDeathCommand command = new TracesDeathCommand(this, traceManager);

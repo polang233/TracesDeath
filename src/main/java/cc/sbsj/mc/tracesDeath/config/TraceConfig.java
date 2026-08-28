@@ -224,16 +224,22 @@ public final class TraceConfig {
     public static final class MannequinConfig {
         private final boolean autoRemoveWhenEmpty;
         private final boolean lavaProof;
+        private final double interactionWidth;
+        private final double interactionHeight;
         private final InteractionConfig interaction;
 
         MannequinConfig(FileConfiguration config) {
             this.autoRemoveWhenEmpty = config.getBoolean("types.mannequin.auto-remove-when-empty", true);
             this.lavaProof = config.getBoolean("types.mannequin.lava-proof", true);
+            this.interactionWidth = Math.max(0.1, config.getDouble("types.mannequin.hitbox.width", 1.8));
+            this.interactionHeight = Math.max(0.1, config.getDouble("types.mannequin.hitbox.height", 1.2));
             this.interaction = new InteractionConfig(config, "types.mannequin.interaction");
         }
 
         public boolean autoRemoveWhenEmpty() { return autoRemoveWhenEmpty; }
         public boolean lavaProof() { return lavaProof; }
+        public double interactionWidth() { return interactionWidth; }
+        public double interactionHeight() { return interactionHeight; }
         public InteractionConfig interaction() { return interaction; }
     }
     

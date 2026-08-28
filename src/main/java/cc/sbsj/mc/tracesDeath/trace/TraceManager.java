@@ -43,6 +43,7 @@ public final class TraceManager {
      */
     public void start() {
         loadCachedTraces();
+        Bukkit.getScheduler().runTask(plugin, this::reconcileLoadedTraces);
         long interval = plugin.traceConfig().cleanupIntervalTicks();
         if (interval > 0) {
             cleanupTask = Bukkit.getScheduler().runTaskTimer(plugin, this::cleanupExpiredTraces, interval, interval);
@@ -191,6 +192,28 @@ public final class TraceManager {
     public int getActiveCount() {
         return activeTraces.size();
     }
+
+    public boolean reconcileTrace(@NotNull UUID traceId) {
+        TraceData data = cacheManager.getTrace(traceId);
+        if (data == null) {
+            return false;
+        }
+        TraceStorageProvider provider = storageRegistry.find(data.storageType()).orElse(null);
+        if (provider == null) {
+            return false;
+        }
+        try {
+            Map<String, String> storageData = provider.reconcile(data);
+            if (!storageData.equals(data.storageData())) {
+                cacheManager.updateTraceStorageData(traceId, storageData);
+            }
+            return provider.isValid(data);
+        } catch (RuntimeException exception) {
+            plugin.getLogger().severe(
+                    "修复墓碑世界对象失败: " + traceId + " - " + exception.getMessage());
+            return false;
+        }
+    }
     
     /**
      * 清理过期的墓碑
@@ -229,6 +252,17 @@ public final class TraceManager {
                     data.creationTime(),
                     data.storageType()
             ));
+        }
+    }
+
+    private void reconcileLoadedTraces() {
+        for (TraceData data : cacheManager.getAllTraces()) {
+            Location location = data.location();
+            int chunkX = location.getBlockX() >> 4;
+            int chunkZ = location.getBlockZ() >> 4;
+            if (location.getWorld().isChunkLoaded(chunkX, chunkZ)) {
+                reconcileTrace(data.traceId());
+            }
         }
     }
     

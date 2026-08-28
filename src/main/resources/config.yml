@@ -85,6 +85,10 @@ types:
     auto-remove-when-empty: true
     # 是否防止熔岩伤害玩家模型实体
     lava-proof: true
+    # 独立交互碰撞体，避免躺卧 NPC 难以点击
+    hitbox:
+      width: 1.8
+      height: 1.2
     # 交互模式配置
     interaction:
       click-type: RIGHT_CLICK
