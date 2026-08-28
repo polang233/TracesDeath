@@ -207,7 +207,7 @@ custom_entity 继续作为不可用占位，不得静默回退到其他类型。
 | FR-102 | 过滤规则 | P1 | 支持禁用世界、死亡原因和物品列表，过滤时不破坏其他掉落 |
 | FR-103 | 玩家墓碑上限 | P1 | 超过上限时按最旧优先处理，并按配置 drop/delete |
 | FR-104 | 定位和提醒 | P1 | 玩家可查询自己的位置和剩余时间；预警只发送一次 |
-| FR-105 | 细分权限 | P1 | list、locate、其他玩家查询、传送/移除、所有者绕过分别授权 |
+| FR-105 | 细分权限 | P1 | list、locate、其他玩家查询、移除、所有者绕过分别授权 |
 | FR-016 | Mannequin 外观和代理 | P0 | 展示皮肤和装备视觉副本；Interaction 提供稳定命中区域；二者一起删除 |
 | FR-202 | 尸体实体 | P2 | 统一使用 GraveRecord，不再写入第二份实体库存 |
 | FR-203 | 箱子矿车 | P2 | 处理移动、区块卸载、实体恢复和原生库存拦截后才可启用 |
@@ -287,7 +287,7 @@ CREATING → ACTIVE → CLAIMED / EXPIRED / REMOVED / ORPHANED → TERMINAL
 
 - death.clear-drops：已删除；稳定版创建成功后固定清除，不能允许复制语义。
 - death.clear-experience：已删除；当前没有经验墓碑，经验保持原版行为。
-- placement.force-place：不能用覆盖重要方块来保证创建。
+- placement.force-place：已删除；不能用覆盖重要方块来保证创建。
 - types.*.buoyant：已删除，待未来明确水/熔岩语义后再设计。
 - minecart、corpse 和 custom_entity 配置：已从默认配置和运行时注册中删除。
 

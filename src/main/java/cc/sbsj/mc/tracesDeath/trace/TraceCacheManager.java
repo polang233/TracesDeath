@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.Bukkit;
@@ -229,17 +230,26 @@ public final class TraceCacheManager {
         for (File file : files) {
             try {
                 YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
-                
+                int schemaVersion = config.getInt("schema-version", 1);
+                if (schemaVersion > 2) {
+                    throw new IllegalArgumentException("不支持的数据格式版本: " + schemaVersion);
+                }
+
                 UUID traceId = UUID.fromString(config.getString("trace-id"));
                 UUID playerId = UUID.fromString(config.getString("player-id"));
-                String playerName = config.getString("player-name");
+                String playerName = config.getString("player-name", "未知玩家");
                 String worldName = config.getString("location.world");
                 String worldId = config.getString("location.world-id");
                 double x = config.getDouble("location.x");
                 double y = config.getDouble("location.y");
                 double z = config.getDouble("location.z");
                 long creationTime = config.getLong("creation-time");
-                String storageType = config.getString("storage-type", "block");
+                if (creationTime <= 0) {
+                    creationTime = file.lastModified() > 0
+                            ? file.lastModified() : System.currentTimeMillis();
+                }
+                String storageType = config.getString("storage-type", "block")
+                        .toLowerCase(Locale.ROOT);
                 Map<String, String> storageData = readStorageData(config);
                 
                 @SuppressWarnings("unchecked")
@@ -254,11 +264,14 @@ public final class TraceCacheManager {
                 Location location = new Location(world, x, y, z);
                 TraceData data = new TraceData(
                         traceId, playerId, playerName, location, items, creationTime, storageType, storageData);
-                cache.put(traceId, data);
+                if (cache.putIfAbsent(traceId, data) != null) {
+                    throw new IllegalArgumentException("墓碑 UUID 重复: " + traceId);
+                }
                 loadedCount++;
                 
             } catch (Exception e) {
                 plugin.getLogger().severe("加载墓碑文件失败: " + file.getName() + " - " + e.getMessage());
+                quarantine(file, e);
             }
         }
         
@@ -300,6 +313,27 @@ public final class TraceCacheManager {
             }
         }
         return worldName == null ? null : Bukkit.getWorld(worldName);
+    }
+
+    private void quarantine(File file, Exception cause) {
+        File quarantineFolder = new File(dataFolder, "quarantine");
+        if (!quarantineFolder.exists() && !quarantineFolder.mkdirs()) {
+            plugin.getLogger().severe("无法创建墓碑损坏文件隔离目录: " + quarantineFolder);
+            return;
+        }
+        File target = new File(
+                quarantineFolder,
+                file.getName() + "." + System.currentTimeMillis() + ".bad"
+        );
+        try {
+            Files.move(file.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            plugin.getLogger().warning(
+                    "已隔离损坏墓碑文件: " + file.getName() + " -> " + target.getName()
+                            + "，原因: " + cause.getMessage());
+        } catch (IOException moveException) {
+            plugin.getLogger().severe(
+                    "隔离损坏墓碑文件失败: " + file.getName() + " - " + moveException.getMessage());
+        }
     }
     
     /**

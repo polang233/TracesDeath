@@ -12,6 +12,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Interaction;
 import org.bukkit.entity.Mannequin;
 import org.bukkit.entity.Player;
+import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -133,6 +134,17 @@ public final class MannequinEvents implements Listener {
                     plugin.traceManager().reconcileTrace(traceId);
                 }
             });
+        }
+    }
+
+    public void cleanupLoadedOrphans() {
+        for (var world : Bukkit.getWorlds()) {
+            for (Entity entity : world.getEntities()) {
+                UUID traceId = readTraceId(entity);
+                if (traceId != null && cacheManager.getTrace(traceId) == null) {
+                    removeOrphanEntity(entity);
+                }
+            }
         }
     }
 

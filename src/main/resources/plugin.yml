@@ -12,11 +12,10 @@ load: POSTWORLD
 commands:
   tracesdeath:
     description: 管理 TracesDeath 死亡痕迹插件
-    usage: /tracesdeath <reload|types|list|info|remove|clear|debug>
+    usage: /tracesdeath <list|locate|reload|types|info|remove|clear|debug>
     aliases:
       - td
       - deathtrace
-    permission: tracesdeath.admin
 
 permissions:
   tracesdeath.admin:

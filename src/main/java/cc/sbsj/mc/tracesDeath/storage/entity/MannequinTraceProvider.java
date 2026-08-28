@@ -238,6 +238,8 @@ public final class MannequinTraceProvider implements TraceStorageProvider {
         interaction.setResponsive(true);
         interaction.setPersistent(true);
         interaction.setGravity(false);
+        interaction.setNoPhysics(true);
+        interaction.setInvulnerable(true);
         configureIdentity(interaction, traceId, ownerId, ROLE_INTERACTION);
     }
 

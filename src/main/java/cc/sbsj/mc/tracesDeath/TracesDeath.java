@@ -62,8 +62,10 @@ public final class TracesDeath extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerEvents(this, traceManager), this);
         getServer().getPluginManager().registerEvents(new TraceProtectionEvents(this, keys), this);
         getServer().getPluginManager().registerEvents(new TraceInteractEvents(keys, interactionService), this);
-        getServer().getPluginManager().registerEvents(
-                new MannequinEvents(this, keys, interactionService, cacheManager), this);
+        MannequinEvents mannequinEvents =
+                new MannequinEvents(this, keys, interactionService, cacheManager);
+        getServer().getPluginManager().registerEvents(mannequinEvents, this);
+        getServer().getScheduler().runTask(this, mannequinEvents::cleanupLoadedOrphans);
 
         // 注册命令
         TracesDeathCommand command = new TracesDeathCommand(this, traceManager);

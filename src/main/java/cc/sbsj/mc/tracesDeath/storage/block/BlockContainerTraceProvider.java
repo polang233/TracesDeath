@@ -47,12 +47,7 @@ public final class BlockContainerTraceProvider implements TraceStorageProvider {
     public PlacementResult place(TraceContext context) {
         Block target = LocationUtil.findReplaceableBlock(context.location(), context.config().searchRadius());
         if (target == null) {
-            // 如果启用了强制放置，尝试在死亡点直接放置
-            if (context.config().forcePlace()) {
-                target = context.location().getBlock();
-            } else {
-                return PlacementResult.failure(context.lang().text("storage.block.no-place"));
-            }
+            return PlacementResult.failure(context.lang().text("storage.block.no-place"));
         }
 
         target.setType(context.config().block().material(), false);

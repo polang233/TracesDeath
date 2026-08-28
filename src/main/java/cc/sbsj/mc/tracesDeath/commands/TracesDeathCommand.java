@@ -5,16 +5,17 @@ import cc.sbsj.mc.tracesDeath.storage.PlacementResult;
 import cc.sbsj.mc.tracesDeath.storage.TraceStorageProvider;
 import cc.sbsj.mc.tracesDeath.trace.TraceManager;
 import cc.sbsj.mc.tracesDeath.trace.TraceManager.TraceInfo;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -25,9 +26,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * TracesDeath 命令处理器
- * <p>
- * 提供插件管理、调试和墓碑操作命令。
+ * TracesDeath 命令处理器。
  */
 public final class TracesDeathCommand implements CommandExecutor, TabCompleter {
     private final TracesDeath plugin;
@@ -39,26 +38,33 @@ public final class TracesDeathCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String @NotNull [] args) {
-        if (!sender.hasPermission("tracesdeath.admin")) {
-            plugin.lang().send(sender, "command.no-permission");
-            return true;
-        }
-        
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
+                             @NotNull String label, String @NotNull [] args) {
         if (args.length == 0) {
-            sendHelp(sender, label);
+            if (canUse(sender)) {
+                sendHelp(sender, label);
+            } else {
+                noPermission(sender);
+            }
             return true;
         }
 
         switch (args[0].toLowerCase()) {
-            case "reload" -> handleReload(sender);
-            case "types" -> handleTypes(sender);
+            case "reload" -> admin(sender, () -> handleReload(sender));
+            case "types" -> admin(sender, () -> handleTypes(sender));
             case "list" -> handleList(sender, args);
-            case "info" -> handleInfo(sender, args);
-            case "remove" -> handleRemove(sender, args);
-            case "clear" -> handleClear(sender);
-            case "debug" -> handleDebug(sender, label, args);
-            default -> sendHelp(sender, label);
+            case "locate" -> handleLocate(sender, args);
+            case "info" -> admin(sender, () -> handleInfo(sender, args));
+            case "remove" -> admin(sender, () -> handleRemove(sender, args));
+            case "clear" -> admin(sender, () -> handleClear(sender, args));
+            case "debug" -> admin(sender, () -> handleDebug(sender, label, args));
+            default -> {
+                if (canUse(sender)) {
+                    sendHelp(sender, label);
+                } else {
+                    noPermission(sender);
+                }
+            }
         }
         return true;
     }
@@ -76,109 +82,164 @@ public final class TracesDeathCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleList(CommandSender sender, String[] args) {
-        Collection<TraceInfo> traces;
-        
-        // 如果指定了玩家名，只显示该玩家的墓碑
-        if (args.length >= 2) {
-            Player target = Bukkit.getPlayer(args[1]);
-            if (target == null) {
-                sender.sendMessage(Component.text("找不到玩家: " + args[1]).color(NamedTextColor.RED));
-                return;
-            }
-            traces = traceManager.getPlayerTraces(target.getUniqueId());
-        } else {
-            traces = traceManager.getActiveTraces();
-        }
-        
-        if (traces.isEmpty()) {
-            sender.sendMessage(Component.text("当前没有活动的墓碑").color(NamedTextColor.YELLOW));
+        if (!canUse(sender)) {
+            noPermission(sender);
             return;
         }
-        
-        sender.sendMessage(Component.text("=== 活动墓碑列表 (" + traces.size() + ") ===").color(NamedTextColor.GOLD));
-        for (TraceInfo info : traces) {
-            long ageSeconds = info.ageSeconds();
-            String ageStr = formatDuration(ageSeconds);
-            sender.sendMessage(Component.text(
-                    String.format("- %s | ID: %s | 类型: %s | 存在时间: %s",
-                            info.playerName(),
-                            info.traceId().toString().substring(0, 8),
-                            info.storageType(),
-                            ageStr)
-            ).color(NamedTextColor.GRAY));
+        Collection<TraceInfo> traces;
+        if (args.length >= 2) {
+            if (!isAdmin(sender)) {
+                noPermission(sender);
+                return;
+            }
+            String playerName = args[1];
+            OfflinePlayer target = Bukkit.getOfflinePlayer(playerName);
+            traces = traceManager.getActiveTraces().stream()
+                    .filter(info -> info.playerId().equals(target.getUniqueId())
+                            || info.playerName().equalsIgnoreCase(playerName))
+                    .toList();
+        } else if (isAdmin(sender)) {
+            traces = traceManager.getActiveTraces();
+        } else if (sender instanceof Player player) {
+            traces = traceManager.getPlayerTraces(player.getUniqueId());
+        } else {
+            noPermission(sender);
+            return;
         }
+
+        if (traces.isEmpty()) {
+            plugin.lang().send(sender, "command.no-traces");
+            return;
+        }
+        plugin.lang().send(sender, "command.list-header",
+                Map.of("count", Integer.toString(traces.size())));
+        for (TraceInfo info : traces) {
+            plugin.lang().send(sender, "command.list-entry", Map.of(
+                    "player", info.playerName(),
+                    "id", shortId(info.traceId()),
+                    "type", info.storageType(),
+                    "age", formatDuration(info.ageSeconds()),
+                    "location", formatLocation(info.location())
+            ));
+        }
+    }
+
+    private void handleLocate(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player) || !canUse(sender)) {
+            if (!(sender instanceof Player)) {
+                plugin.lang().send(sender, "command.player-only");
+            } else {
+                noPermission(sender);
+            }
+            return;
+        }
+
+        List<TraceInfo> ownTraces = traceManager.getPlayerTraces(player.getUniqueId()).stream().toList();
+        if (ownTraces.isEmpty()) {
+            plugin.lang().send(sender, "command.no-traces");
+            return;
+        }
+        if (args.length < 2) {
+            TraceInfo latest = ownTraces.stream()
+                    .max((left, right) -> Long.compare(left.creationTime(), right.creationTime()))
+                    .orElseThrow();
+            sendLocation(sender, latest);
+            return;
+        }
+
+        UUID traceId = resolveTraceId(args[1], sender);
+        if (traceId == null) {
+            return;
+        }
+        TraceInfo info = traceManager.getTrace(traceId);
+        if (info == null || !info.playerId().equals(player.getUniqueId())) {
+            plugin.lang().send(sender, "command.not-your-trace");
+            return;
+        }
+        sendLocation(sender, info);
+    }
+
+    private void sendLocation(CommandSender sender, TraceInfo info) {
+        plugin.lang().send(sender, "command.location", Map.of(
+                "id", info.traceId().toString(),
+                "type", info.storageType(),
+                "location", formatLocation(info.location()),
+                "remaining", remainingTime(info)
+        ));
     }
 
     private void handleInfo(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(Component.text("用法: /td info <trace-id>").color(NamedTextColor.YELLOW));
+            plugin.lang().send(sender, "command.usage-info", Map.of("label", "td"));
             return;
         }
-        
-        try {
-            UUID traceId = UUID.fromString(args[1]);
-            TraceInfo info = traceManager.getTrace(traceId);
-            if (info == null) {
-                sender.sendMessage(Component.text("找不到该墓碑").color(NamedTextColor.RED));
-                return;
-            }
-            
-            sender.sendMessage(Component.text("=== 墓碑详情 ===").color(NamedTextColor.GOLD));
-            sender.sendMessage(Component.text("ID: " + info.traceId()).color(NamedTextColor.GRAY));
-            sender.sendMessage(Component.text("玩家: " + info.playerName()).color(NamedTextColor.GRAY));
-            sender.sendMessage(Component.text("类型: " + info.storageType()).color(NamedTextColor.GRAY));
-            sender.sendMessage(Component.text("位置: " + formatLocation(info.location())).color(NamedTextColor.GRAY));
-            sender.sendMessage(Component.text("创建时间: " + new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-                    .format(new java.util.Date(info.creationTime()))).color(NamedTextColor.GRAY));
-            sender.sendMessage(Component.text("存在时间: " + formatDuration(info.ageSeconds())).color(NamedTextColor.GRAY));
-            
-            long expirationMillis = plugin.traceConfig().traceExpirationMillis();
-            if (expirationMillis > 0) {
-                long remaining = (expirationMillis - info.ageMillis()) / 1000;
-                if (remaining > 0) {
-                    sender.sendMessage(Component.text("剩余时间: " + formatDuration(remaining)).color(NamedTextColor.YELLOW));
-                } else {
-                    sender.sendMessage(Component.text("已过期，等待清理").color(NamedTextColor.RED));
-                }
-            } else {
-                sender.sendMessage(Component.text("永不过期").color(NamedTextColor.GREEN));
-            }
-        } catch (IllegalArgumentException e) {
-            sender.sendMessage(Component.text("无效的墓碑ID格式").color(NamedTextColor.RED));
+        UUID traceId = resolveTraceId(args[1], sender);
+        if (traceId == null) {
+            return;
         }
+        TraceInfo info = traceManager.getTrace(traceId);
+        if (info == null) {
+            plugin.lang().send(sender, "command.trace-not-found");
+            return;
+        }
+
+        plugin.lang().send(sender, "command.info-header");
+        plugin.lang().send(sender, "command.info-id", Map.of("id", info.traceId().toString()));
+        plugin.lang().send(sender, "command.info-player", Map.of("player", info.playerName()));
+        plugin.lang().send(sender, "command.info-type", Map.of("type", info.storageType()));
+        plugin.lang().send(sender, "command.info-location",
+                Map.of("location", formatLocation(info.location())));
+        plugin.lang().send(sender, "command.info-created", Map.of(
+                "time", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+                        .format(new Date(info.creationTime()))
+        ));
+        plugin.lang().send(sender, "command.info-age",
+                Map.of("age", formatDuration(info.ageSeconds())));
+        plugin.lang().send(sender, "command.info-remaining",
+                Map.of("remaining", remainingTime(info)));
     }
 
     private void handleRemove(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(Component.text("用法: /td remove <trace-id> [drop-items]").color(NamedTextColor.YELLOW));
+            plugin.lang().send(sender, "command.usage-remove", Map.of("label", "td"));
             return;
         }
-        
-        try {
-            UUID traceId = UUID.fromString(args[1]);
-            boolean dropItems = args.length >= 3 && Boolean.parseBoolean(args[2]);
-            
-            if (traceManager.removeTrace(traceId, dropItems)) {
-                sender.sendMessage(Component.text("已移除墓碑: " + traceId).color(NamedTextColor.GREEN));
-            } else {
-                sender.sendMessage(Component.text("找不到该墓碑").color(NamedTextColor.RED));
-            }
-        } catch (IllegalArgumentException e) {
-            sender.sendMessage(Component.text("无效的墓碑ID格式").color(NamedTextColor.RED));
+        UUID traceId = resolveTraceId(args[1], sender);
+        if (traceId == null) {
+            return;
+        }
+        boolean dropItems = parseDropMode(sender, args.length >= 3 ? args[2] : "delete");
+        if (args.length >= 3 && !isDropMode(args[2])) {
+            return;
+        }
+        if (traceManager.removeTrace(traceId, dropItems)) {
+            plugin.lang().send(sender, "command.remove-success",
+                    Map.of("id", traceId.toString()));
+        } else {
+            plugin.lang().send(sender, "command.trace-not-found");
         }
     }
 
-    private void handleClear(CommandSender sender) {
-        int count = traceManager.getActiveCount();
-        if (count == 0) {
-            sender.sendMessage(Component.text("当前没有活动的墓碑").color(NamedTextColor.YELLOW));
+    private void handleClear(CommandSender sender, String[] args) {
+        boolean dropItems = parseDropMode(sender, args.length >= 2 ? args[1] : "delete");
+        if (args.length >= 2 && !isDropMode(args[1])) {
             return;
         }
-        
-        for (TraceInfo info : traceManager.getActiveTraces()) {
-            traceManager.removeTrace(info.traceId(), false);
+        List<TraceInfo> traces = new ArrayList<>(traceManager.getActiveTraces());
+        if (traces.isEmpty()) {
+            plugin.lang().send(sender, "command.no-traces");
+            return;
         }
-        sender.sendMessage(Component.text("已清除所有 " + count + " 个墓碑").color(NamedTextColor.GREEN));
+
+        int removed = 0;
+        for (TraceInfo info : traces) {
+            if (traceManager.removeTrace(info.traceId(), dropItems)) {
+                removed++;
+            }
+        }
+        plugin.lang().send(sender, "command.clear-success",
+                Map.of("removed", Integer.toString(removed),
+                        "total", Integer.toString(traces.size())));
     }
 
     private void handleDebug(CommandSender sender, String label, String[] args) {
@@ -204,14 +265,90 @@ public final class TracesDeathCommand implements CommandExecutor, TabCompleter {
     }
 
     private void sendHelp(CommandSender sender, String label) {
-        sender.sendMessage(Component.text("=== TracesDeath 命令帮助 ===").color(NamedTextColor.GOLD));
-        plugin.lang().send(sender, "command.usage-reload", Map.of("label", label));
-        plugin.lang().send(sender, "command.usage-types", Map.of("label", label));
+        plugin.lang().send(sender, "command.help-header");
         plugin.lang().send(sender, "command.usage-list", Map.of("label", label));
-        plugin.lang().send(sender, "command.usage-info", Map.of("label", label));
-        plugin.lang().send(sender, "command.usage-remove", Map.of("label", label));
-        plugin.lang().send(sender, "command.usage-clear", Map.of("label", label));
-        plugin.lang().send(sender, "command.usage-debug-create", Map.of("label", label));
+        plugin.lang().send(sender, "command.usage-locate", Map.of("label", label));
+        if (isAdmin(sender)) {
+            plugin.lang().send(sender, "command.usage-reload", Map.of("label", label));
+            plugin.lang().send(sender, "command.usage-types", Map.of("label", label));
+            plugin.lang().send(sender, "command.usage-info", Map.of("label", label));
+            plugin.lang().send(sender, "command.usage-remove", Map.of("label", label));
+            plugin.lang().send(sender, "command.usage-clear", Map.of("label", label));
+            plugin.lang().send(sender, "command.usage-debug-create", Map.of("label", label));
+        }
+    }
+
+    private UUID resolveTraceId(String value, CommandSender sender) {
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException ignored) {
+        }
+
+        List<UUID> matches = traceManager.getActiveTraces().stream()
+                .map(TraceInfo::traceId)
+                .filter(id -> id.toString().startsWith(value.toLowerCase()))
+                .toList();
+        if (matches.size() == 1) {
+            return matches.getFirst();
+        }
+        if (matches.size() > 1) {
+            plugin.lang().send(sender, "command.ambiguous-id",
+                    Map.of("value", value, "count", Integer.toString(matches.size())));
+        } else {
+            plugin.lang().send(sender, "command.invalid-id", Map.of("value", value));
+        }
+        return null;
+    }
+
+    private String remainingTime(TraceInfo info) {
+        long expiration = plugin.traceConfig().traceExpirationMillis();
+        if (expiration <= 0) {
+            return plugin.lang().text("command.never");
+        }
+        long remaining = Math.max(0, (expiration - info.ageMillis()) / 1000);
+        return remaining == 0 ? plugin.lang().text("command.expired") : formatDuration(remaining);
+    }
+
+    private boolean parseDropMode(CommandSender sender, String value) {
+        if ("drop".equalsIgnoreCase(value) || "true".equalsIgnoreCase(value)) {
+            return true;
+        }
+        if ("delete".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)) {
+            return false;
+        }
+        plugin.lang().send(sender, "command.invalid-value", Map.of("value", value));
+        return false;
+    }
+
+    private boolean isDropMode(String value) {
+        return "drop".equalsIgnoreCase(value)
+                || "delete".equalsIgnoreCase(value)
+                || "true".equalsIgnoreCase(value)
+                || "false".equalsIgnoreCase(value);
+    }
+
+    private void admin(CommandSender sender, Runnable action) {
+        if (isAdmin(sender)) {
+            action.run();
+        } else {
+            noPermission(sender);
+        }
+    }
+
+    private boolean canUse(CommandSender sender) {
+        return isAdmin(sender) || sender.hasPermission("tracesdeath.use");
+    }
+
+    private boolean isAdmin(CommandSender sender) {
+        return sender.hasPermission("tracesdeath.admin");
+    }
+
+    private void noPermission(CommandSender sender) {
+        plugin.lang().send(sender, "command.no-permission");
+    }
+
+    private String shortId(UUID traceId) {
+        return traceId.toString().substring(0, 8);
     }
 
     private String formatDuration(long seconds) {
@@ -220,9 +357,7 @@ public final class TracesDeathCommand implements CommandExecutor, TabCompleter {
         } else if (seconds < 3600) {
             return (seconds / 60) + "分" + (seconds % 60) + "秒";
         } else {
-            long hours = seconds / 3600;
-            long minutes = (seconds % 3600) / 60;
-            return hours + "时" + minutes + "分";
+            return (seconds / 3600) + "时" + (seconds % 3600) / 60 + "分";
         }
     }
 
@@ -235,48 +370,43 @@ public final class TracesDeathCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String @NotNull [] args) {
-        if (!sender.hasPermission("tracesdeath.admin")) {
+    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender,
+                                                 @NotNull Command command,
+                                                 @NotNull String label,
+                                                 String @NotNull [] args) {
+        if (!canUse(sender)) {
             return List.of();
         }
-        
         if (args.length == 1) {
-            return filter(List.of("reload", "types", "list", "info", "remove", "clear", "debug"), args[0]);
-        }
-        
-        if (args.length == 2) {
-            switch (args[0].toLowerCase()) {
-                case "debug" -> { return filter(List.of("create"), args[1]); }
-                case "list" -> {
-                    // 返回在线玩家名
-                    return filter(Bukkit.getOnlinePlayers().stream()
-                            .map(Player::getName)
-                            .toList(), args[1]);
-                }
-                case "info", "remove" -> {
-                    // 返回活动墓碑ID前缀
-                    return filter(traceManager.getActiveTraces().stream()
-                            .map(info -> info.traceId().toString().substring(0, 8))
-                            .toList(), args[1]);
-                }
+            List<String> commands = new ArrayList<>(List.of("list", "locate"));
+            if (isAdmin(sender)) {
+                commands.addAll(List.of("reload", "types", "info", "remove", "clear", "debug"));
             }
+            return filter(commands, args[0]);
         }
-        
+        if (args.length == 2) {
+            return switch (args[0].toLowerCase()) {
+                case "debug" -> filter(List.of("create"), args[1]);
+                case "list" -> isAdmin(sender)
+                        ? filter(Bukkit.getOnlinePlayers().stream().map(Player::getName).toList(), args[1])
+                        : List.of();
+                case "info", "remove", "locate" -> filter(
+                        traceManager.getActiveTraces().stream().map(info -> shortId(info.traceId())).toList(),
+                        args[1]);
+                case "clear" -> filter(List.of("drop", "delete"), args[1]);
+                default -> List.of();
+            };
+        }
         if (args.length == 3 && args[0].equalsIgnoreCase("remove")) {
-            return filter(List.of("true", "false"), args[2]);
+            return filter(List.of("drop", "delete"), args[2]);
         }
-        
         return List.of();
     }
 
     private static List<String> filter(List<String> candidates, String prefix) {
         String lowerPrefix = prefix.toLowerCase();
-        List<String> result = new ArrayList<>();
-        for (String candidate : candidates) {
-            if (candidate.toLowerCase().startsWith(lowerPrefix)) {
-                result.add(candidate);
-            }
-        }
-        return result;
+        return candidates.stream()
+                .filter(candidate -> candidate.toLowerCase().startsWith(lowerPrefix))
+                .toList();
     }
 }

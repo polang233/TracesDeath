@@ -149,7 +149,11 @@ public final class TraceManager {
             }
 
             TraceStorageProvider provider = storageRegistry.find(data.storageType()).orElse(null);
-            if (provider != null && !provider.cleanup(data)) {
+            if (provider == null) {
+                plugin.getLogger().warning("墓碑类型没有可用提供者，已保留数据: " + traceId);
+                return false;
+            }
+            if (!provider.cleanup(data)) {
                 plugin.getLogger().warning("无法清理墓碑世界对象，已保留数据: " + traceId);
                 return false;
             }

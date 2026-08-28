@@ -12,6 +12,9 @@ import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBurnEvent;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityCombustEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.persistence.PersistentDataType;
@@ -30,9 +33,23 @@ public class TraceProtectionEvents implements Listener {
         this.keys = keys;
     }
 
-    /**
-     * 防止方块容器被熔岩燃烧
-     */
+    @EventHandler(ignoreCancelled = true)
+    public void onBlockBreak(BlockBreakEvent event) {
+        if (isTraceBlock(event.getBlock())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onBlockExplode(BlockExplodeEvent event) {
+        event.blockList().removeIf(this::isTraceBlock);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onEntityExplode(EntityExplodeEvent event) {
+        event.blockList().removeIf(this::isTraceBlock);
+    }
+
     @EventHandler(ignoreCancelled = true)
     public void onBlockBurn(BlockBurnEvent event) {
         Block block = event.getBlock();
@@ -51,10 +68,7 @@ public class TraceProtectionEvents implements Listener {
         
         // 检查配置是否启用防熔岩
         boolean lavaProof = false;
-        String storageType = plugin.traceConfig().storageType();
-        if ("block".equals(storageType)) {
-            lavaProof = plugin.traceConfig().block().lavaProof();
-        }
+        lavaProof = plugin.traceConfig().block().lavaProof();
         
         if (lavaProof) {
             event.setCancelled(true);
@@ -98,5 +112,16 @@ public class TraceProtectionEvents implements Listener {
     private boolean isTraceMannequin(Entity entity) {
         String traceType = entity.getPersistentDataContainer().get(keys.traceType(), PersistentDataType.STRING);
         return "mannequin".equals(traceType);
+    }
+
+    private boolean isTraceBlock(Block block) {
+        if (!(block.getState() instanceof TileState tileState)) {
+            return false;
+        }
+        String traceType = tileState.getPersistentDataContainer().get(
+                keys.traceType(), PersistentDataType.STRING);
+        return "block".equals(traceType)
+                && tileState.getPersistentDataContainer().has(
+                        keys.traceId(), PersistentDataType.STRING);
     }
 }

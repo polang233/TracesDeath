@@ -23,7 +23,6 @@ public final class TraceConfig {
     
     // 放置配置
     private final int searchRadius;
-    private final boolean forcePlace;
     
     // 过期配置
     private final long traceExpirationMillis;
@@ -52,7 +51,6 @@ public final class TraceConfig {
         
         // 放置配置
         this.searchRadius = Math.max(0, config.getInt("placement.search-radius", 3));
-        this.forcePlace = config.getBoolean("placement.force-place", false);
         
         // 过期配置
         long timeSeconds = Math.max(0, config.getLong("expiration.time-seconds", 600));
@@ -103,10 +101,6 @@ public final class TraceConfig {
         return searchRadius;
     }
     
-    public boolean forcePlace() {
-        return forcePlace;
-    }
-
     // === 过期配置 ===
     
     /**

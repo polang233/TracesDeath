@@ -25,8 +25,6 @@ death:
 placement:
   # 搜索可放置位置的半径（方块）
   search-radius: 3
-  # 如果找不到合适位置，是否强制放置在死亡点
-  force-place: false
 
 # === 墓碑过期与清理配置 ===
 expiration:

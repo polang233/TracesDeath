@@ -66,6 +66,7 @@ Mannequin 默认配置为 BOTH：
 | /td reload | 重载配置和语言 |
 | /td types | 查看已注册存储类型 |
 | /td list [玩家名] | 列出活动墓碑 |
+| /td locate [ID] | 查看自己的墓碑位置 |
 | /td info ID | 查看墓碑详情 |
 | /td remove ID [drop] | 移除指定墓碑，可选掉落剩余物品 |
 | /td clear | 清除所有活动墓碑 |
