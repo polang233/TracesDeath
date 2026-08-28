@@ -1,8 +1,7 @@
 package cc.sbsj.mc.tracesDeath.storage;
 
 import cc.sbsj.mc.tracesDeath.trace.TraceContext;
-import java.util.UUID;
-import org.bukkit.Location;
+import cc.sbsj.mc.tracesDeath.trace.TraceData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,7 +15,7 @@ public interface TraceStorageProvider {
     
     /**
      * 获取此存储提供者的唯一标识符
-     * @return 提供者ID，如 "block", "minecart", "corpse"
+     * @return 提供者ID，如 "block", "mannequin"
      */
     @NotNull
     String id();
@@ -40,21 +39,19 @@ public interface TraceStorageProvider {
      * 清理指定位置的墓碑容器
      * <p>
      * 默认实现为空操作，子类可根据需要覆盖
-     * @param location 墓碑位置
-     * @param traceId 墓碑唯一标识
+     * @param data 墓碑权威数据
      * @return 如果成功清理返回 true
      */
-    default boolean cleanup(@NotNull Location location, @NotNull UUID traceId) {
+    default boolean cleanup(@NotNull TraceData data) {
         return false;
     }
     
     /**
      * 检查指定位置是否存在有效的墓碑容器
-     * @param location 要检查的位置
-     * @param traceId 墓碑唯一标识
+     * @param data 墓碑权威数据
      * @return 如果存在有效容器返回 true
      */
-    default boolean isValid(@NotNull Location location, @NotNull UUID traceId) {
+    default boolean isValid(@NotNull TraceData data) {
         return true;
     }
     

@@ -3,11 +3,10 @@ package cc.sbsj.mc.tracesDeath.storage.block;
 import cc.sbsj.mc.tracesDeath.storage.PlacementResult;
 import cc.sbsj.mc.tracesDeath.storage.TraceStorageProvider;
 import cc.sbsj.mc.tracesDeath.trace.TraceContext;
+import cc.sbsj.mc.tracesDeath.trace.TraceData;
 import cc.sbsj.mc.tracesDeath.trace.TraceKeys;
-import cc.sbsj.mc.tracesDeath.util.InventoryUtil;
 import cc.sbsj.mc.tracesDeath.util.LocationUtil;
 import java.util.Map;
-import java.util.UUID;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -68,11 +67,6 @@ public final class BlockContainerTraceProvider implements TraceStorageProvider {
             tileState.getPersistentDataContainer().set(keys.traceType(), PersistentDataType.STRING, id());
             tileState.getPersistentDataContainer().set(keys.owner(), PersistentDataType.STRING, context.player().getUniqueId().toString());
             
-            // 如果启用了浮力特性，标记此容器为可浮起
-            if (context.config().block().buoyant()) {
-                tileState.getPersistentDataContainer().set(keys.buoyant(), PersistentDataType.BOOLEAN, true);
-            }
-            
             // 先更新 TileState 以保存 PDC 数据
             tileState.update(true, false);
         }
@@ -85,30 +79,30 @@ public final class BlockContainerTraceProvider implements TraceStorageProvider {
         container.update(true, false);
         
         return PlacementResult.success(context.lang().text("storage.block.created",
-                Map.of("material", context.config().block().material().name())));
+                Map.of("material", context.config().block().material().name())), target.getLocation());
     }
     
     @Override
-    public boolean cleanup(@NotNull Location location, @NotNull UUID traceId) {
-        Block block = location.getBlock();
+    public boolean cleanup(@NotNull TraceData data) {
+        Block block = data.location().getBlock();
         if (block.getState() instanceof Container container && container instanceof TileState tileState) {
             String storedId = tileState.getPersistentDataContainer().get(keys.traceId(), PersistentDataType.STRING);
-            if (traceId.toString().equals(storedId)) {
+            if (data.traceId().toString().equals(storedId)) {
                 // 注意：物品存储在缓存中，这里只需要移除方块
                 // 如果需要掉落物品，应该由 TraceManager 从缓存中获取并掉落
                 block.setType(Material.AIR, false);
                 return true;
             }
         }
-        return false;
+        return true;
     }
     
     @Override
-    public boolean isValid(@NotNull Location location, @NotNull UUID traceId) {
-        Block block = location.getBlock();
+    public boolean isValid(@NotNull TraceData data) {
+        Block block = data.location().getBlock();
         if (block.getState() instanceof Container container && container instanceof TileState tileState) {
             String storedId = tileState.getPersistentDataContainer().get(keys.traceId(), PersistentDataType.STRING);
-            return traceId.toString().equals(storedId);
+            return data.traceId().toString().equals(storedId);
         }
         return false;
     }

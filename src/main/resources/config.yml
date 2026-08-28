@@ -9,11 +9,9 @@ enabled: true
 # === 存储类型选择 ===
 storage:
   # 可选存储类型:
-  # - block: 使用方块容器（箱子、木桶、潜影盒等）
-  # - minecart: 使用箱子矿车实体
-  # - corpse: 使用玩家头颅盔甲架 + 虚拟背包
-  # - custom_entity: 预留模块（当前 Paper API 不支持自定义实体注册）
-  type: block
+  # - mannequin: 使用高版本玩家模型 NPC + 虚拟背包（默认）
+  # - block: 使用方块容器作为兼容回退
+  type: mannequin
 
 # === 死亡处理配置 ===
 death:
@@ -70,8 +68,6 @@ types:
     auto-remove-when-empty: true
     # 是否防止熔岩燃烧容器
     lava-proof: true
-    # 是否让容器浮在水面和熔岩上（不会下沉）
-    buoyant: true
     # 交互模式配置
     interaction:
       # 交互方式: RIGHT_CLICK (右键), LEFT_CLICK (左键), BOTH (两者皆可)
@@ -83,32 +79,12 @@ types:
       # 当玩家已有装备/手持物品时的处理方式:
       # DROP (丢地上), TRY_INVENTORY (尝试放入背包，满了再丢地上)
       conflict-handling: TRY_INVENTORY
-  
-  # 箱子矿车配置（仅当 storage.type=minecart 时生效）
-  minecart:
-    # 矿车实体类型
-    entity-type: CHEST_MINECART
-    # 拿完物品后是否自动移除矿车实体
+  # 玩家模型 NPC 配置（需要 Paper 1.21.9+）
+  mannequin:
+    # 拿完物品后是否自动移除玩家模型实体
     auto-remove-when-empty: true
-    # 是否防止熔岩伤害矿车
+    # 是否防止熔岩伤害玩家模型实体
     lava-proof: true
-    # 是否让矿车浮在水面和熔岩上
-    buoyant: true
-    # 交互模式配置
-    interaction:
-      click-type: RIGHT_CLICK
-      mode: OPEN_GUI
-      auto-equip: true
-      conflict-handling: TRY_INVENTORY
-  
-  # 尸体实体配置（仅当 storage.type=corpse 时生效）
-  corpse:
-    # 拿完物品后是否自动移除尸体实体
-    auto-remove-when-empty: true
-    # 是否防止熔岩伤害尸体
-    lava-proof: true
-    # 是否让尸体浮在水面和熔岩上
-    buoyant: true
     # 交互模式配置
     interaction:
       click-type: RIGHT_CLICK

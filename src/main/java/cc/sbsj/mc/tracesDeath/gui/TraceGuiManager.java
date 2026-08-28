@@ -247,10 +247,8 @@ public final class TraceGuiManager implements Listener {
             String storageType = plugin.traceConfig().storageType();
             if ("block".equals(storageType)) {
                 autoRemove = plugin.traceConfig().block().autoRemoveWhenEmpty();
-            } else if ("minecart".equals(storageType)) {
-                autoRemove = plugin.traceConfig().minecart().autoRemoveWhenEmpty();
-            } else if ("corpse".equals(storageType)) {
-                autoRemove = plugin.traceConfig().corpse().autoRemoveWhenEmpty();
+            } else if ("mannequin".equals(storageType)) {
+                autoRemove = plugin.traceConfig().mannequin().autoRemoveWhenEmpty();
             }
             
             if (autoRemove) {

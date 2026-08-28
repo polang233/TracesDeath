@@ -42,6 +42,7 @@ public final class TraceManager {
      * 启动墓碑管理器，开始定期清理过期的墓碑
      */
     public void start() {
+        loadCachedTraces();
         long interval = plugin.traceConfig().cleanupIntervalTicks();
         if (interval > 0) {
             cleanupTask = Bukkit.getScheduler().runTaskTimer(plugin, this::cleanupExpiredTraces, interval, interval);
@@ -57,11 +58,7 @@ public final class TraceManager {
             cleanupTask.cancel();
             cleanupTask = null;
         }
-        // 清理所有活动墓碑
-        for (TraceInfo info : activeTraces.values()) {
-            removeTrace(info.traceId(), false);
-        }
-        activeTraces.clear();
+        cacheManager.shutdown();
     }
     
     /**
@@ -85,15 +82,16 @@ public final class TraceManager {
         
         PlacementResult result = storageRegistry.place(context);
         if (result.success()) {
+            Location placedLocation = result.location() == null ? location.clone() : result.location();
             // 保存物品到缓存
             cacheManager.createTrace(traceId, player.getUniqueId(), player.getName(), 
-                                    location.clone(), drops.stream().toList());
+                    placedLocation, drops.stream().toList(), context.config().storageType(), result.storageData());
             
             TraceInfo info = new TraceInfo(
                     traceId,
                     player.getUniqueId(),
                     player.getName(),
-                    location.clone(),
+                    placedLocation,
                     System.currentTimeMillis(),
                     context.config().storageType()
             );
@@ -115,19 +113,30 @@ public final class TraceManager {
      * @return 如果成功移除返回 true
      */
     public boolean removeTrace(@NotNull UUID traceId, boolean dropItems) {
-        TraceInfo info = activeTraces.remove(traceId);
+        TraceInfo info = activeTraces.get(traceId);
         if (info == null) {
             return false;
         }
-        
+
+        TraceData data = cacheManager.getTrace(traceId);
+        if (data == null) {
+            activeTraces.remove(traceId);
+            return false;
+        }
+
+        TraceStorageProvider provider = storageRegistry.find(data.storageType()).orElse(null);
+        if (provider != null && !provider.cleanup(data)) {
+            plugin.getLogger().warning("无法清理墓碑世界对象，已保留数据: " + traceId);
+            return false;
+        }
+
         // 如果需要掉落物品，从缓存中获取并掉落
         if (dropItems) {
-            TraceData data = cacheManager.getTrace(traceId);
-            if (data != null && !data.isEmpty()) {
+            if (!data.isEmpty()) {
                 for (ItemStack item : data.items()) {
                     if (item != null && !item.getType().isAir()) {
-                        info.location().getWorld().dropItemNaturally(
-                                info.location().add(0.5, 0.5, 0.5), item.clone());
+                        Location dropLocation = info.location().clone().add(0.5, 0.5, 0.5);
+                        info.location().getWorld().dropItemNaturally(dropLocation, item.clone());
                     }
                 }
             }
@@ -135,12 +144,7 @@ public final class TraceManager {
         
         // 从缓存中移除
         cacheManager.removeTrace(traceId);
-        
-        // 尝试通过存储提供者清理（移除方块/实体）
-        TraceStorageProvider provider = storageRegistry.find(info.storageType()).orElse(null);
-        if (provider != null) {
-            provider.cleanup(info.location(), traceId);
-        }
+        activeTraces.remove(traceId);
         
         if (plugin.traceConfig().debug()) {
             plugin.getLogger().info("移除墓碑: " + traceId + " | 玩家: " + info.playerName());
@@ -211,6 +215,20 @@ public final class TraceManager {
         
         if (removedCount > 0 && plugin.traceConfig().debug()) {
             plugin.getLogger().info("清理了 " + removedCount + " 个过期墓碑");
+        }
+    }
+
+    private void loadCachedTraces() {
+        activeTraces.clear();
+        for (TraceData data : cacheManager.getAllTraces()) {
+            activeTraces.put(data.traceId(), new TraceInfo(
+                    data.traceId(),
+                    data.playerId(),
+                    data.playerName(),
+                    data.location(),
+                    data.creationTime(),
+                    data.storageType()
+            ));
         }
     }
     

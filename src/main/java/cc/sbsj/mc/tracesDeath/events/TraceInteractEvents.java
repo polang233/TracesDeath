@@ -87,6 +87,11 @@ public class TraceInteractEvents implements Listener {
         }
         
         Player player = event.getPlayer();
+        if (plugin.traceConfig().ownerOnly() && !data.playerId().equals(player.getUniqueId())) {
+            player.sendMessage(Component.text("你不能打开其他玩家的墓碑").color(NamedTextColor.RED));
+            event.setCancelled(true);
+            return;
+        }
         
         // 获取当前存储类型的交互配置
         TraceConfig.InteractionConfig interactionConfig = getInteractionConfig();
@@ -129,8 +134,7 @@ public class TraceInteractEvents implements Listener {
         String storageType = plugin.traceConfig().storageType();
         return switch (storageType) {
             case "block" -> plugin.traceConfig().block().interaction();
-            case "minecart" -> plugin.traceConfig().minecart().interaction();
-            case "corpse" -> plugin.traceConfig().corpse().interaction();
+            case "mannequin" -> plugin.traceConfig().mannequin().interaction();
             default -> null;
         };
     }
@@ -199,10 +203,8 @@ public class TraceInteractEvents implements Listener {
             String storageType = plugin.traceConfig().storageType();
             if ("block".equals(storageType)) {
                 autoRemove = plugin.traceConfig().block().autoRemoveWhenEmpty();
-            } else if ("minecart".equals(storageType)) {
-                autoRemove = plugin.traceConfig().minecart().autoRemoveWhenEmpty();
-            } else if ("corpse".equals(storageType)) {
-                autoRemove = plugin.traceConfig().corpse().autoRemoveWhenEmpty();
+            } else if ("mannequin".equals(storageType)) {
+                autoRemove = plugin.traceConfig().mannequin().autoRemoveWhenEmpty();
             }
             
             if (autoRemove) {

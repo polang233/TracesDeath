@@ -9,7 +9,6 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.block.TileState;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.minecart.StorageMinecart;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBurnEvent;
@@ -79,9 +78,8 @@ public class TraceProtectionEvents implements Listener {
             return;
         }
         
-        // 检查是否是矿车
-        if (entity instanceof StorageMinecart minecart) {
-            handleMinecartProtection(minecart, event);
+        if (isTraceMannequin(entity) && plugin.traceConfig().mannequin().lavaProof()) {
+            event.setCancelled(true);
         }
     }
 
@@ -92,51 +90,13 @@ public class TraceProtectionEvents implements Listener {
     public void onEntityCombust(EntityCombustEvent event) {
         Entity entity = event.getEntity();
         
-        // 检查是否是矿车
-        if (entity instanceof StorageMinecart minecart) {
-            handleMinecartCombustProtection(minecart, event);
+        if (isTraceMannequin(entity) && plugin.traceConfig().mannequin().lavaProof()) {
+            event.setCancelled(true);
         }
     }
 
-    private void handleMinecartProtection(StorageMinecart minecart, EntityDamageEvent event) {
-        String traceIdStr = minecart.getPersistentDataContainer().get(keys.traceId(), PersistentDataType.STRING);
-        if (traceIdStr == null) {
-            return; // 不是墓碑容器
-        }
-        
-        // 检查配置是否启用防熔岩
-        boolean lavaProof = false;
-        String storageType = plugin.traceConfig().storageType();
-        if ("minecart".equals(storageType)) {
-            lavaProof = plugin.traceConfig().minecart().lavaProof();
-        }
-        
-        if (lavaProof) {
-            event.setCancelled(true);
-            if (plugin.traceConfig().debug()) {
-                plugin.getLogger().info("阻止墓碑矿车被熔岩伤害: " + traceIdStr);
-            }
-        }
-    }
-
-    private void handleMinecartCombustProtection(StorageMinecart minecart, EntityCombustEvent event) {
-        String traceIdStr = minecart.getPersistentDataContainer().get(keys.traceId(), PersistentDataType.STRING);
-        if (traceIdStr == null) {
-            return; // 不是墓碑容器
-        }
-        
-        // 检查配置是否启用防熔岩
-        boolean lavaProof = false;
-        String storageType = plugin.traceConfig().storageType();
-        if ("minecart".equals(storageType)) {
-            lavaProof = plugin.traceConfig().minecart().lavaProof();
-        }
-        
-        if (lavaProof) {
-            event.setCancelled(true);
-            if (plugin.traceConfig().debug()) {
-                plugin.getLogger().info("阻止墓碑矿车着火: " + traceIdStr);
-            }
-        }
+    private boolean isTraceMannequin(Entity entity) {
+        String traceType = entity.getPersistentDataContainer().get(keys.traceType(), PersistentDataType.STRING);
+        return "mannequin".equals(traceType);
     }
 }

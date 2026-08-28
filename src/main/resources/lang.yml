@@ -21,11 +21,9 @@ storage:
     no-place: "&c附近没有可替换的方块位置。"
     not-container: "&c{material} 不是可用容器方块。"
     created: "&a已生成方块容器: &f{material}"
-  minecart:
-    spawn-failed: "&c当前服务端无法生成箱子矿车容器。"
-    created: "&a已生成箱子矿车容器。"
-  corpse:
-    created: "&a已生成玩家外观实体容器。"
+  mannequin:
+    spawn-failed: "&c当前服务端无法生成玩家模型实体。"
+    created: "&a已生成玩家模型墓碑。"
   custom-entity:
     unavailable: "&c当前 Paper API 未暴露稳定的通用自定义实体注册入口，已保留独立模块位。"
 

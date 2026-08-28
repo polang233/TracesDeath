@@ -10,13 +10,13 @@ public final class TraceKeys {
     private final NamespacedKey traceId;
     private final NamespacedKey traceType;
     private final NamespacedKey owner;
-    private final NamespacedKey buoyant;
+    private final NamespacedKey entityRole;
 
     public TraceKeys(Plugin plugin) {
         this.traceId = new NamespacedKey(plugin, "trace_id");
         this.traceType = new NamespacedKey(plugin, "trace_type");
         this.owner = new NamespacedKey(plugin, "owner");
-        this.buoyant = new NamespacedKey(plugin, "buoyant");
+        this.entityRole = new NamespacedKey(plugin, "entity_role");
     }
 
     public NamespacedKey traceId() {
@@ -31,7 +31,7 @@ public final class TraceKeys {
         return owner;
     }
     
-    public NamespacedKey buoyant() {
-        return buoyant;
+    public NamespacedKey entityRole() {
+        return entityRole;
     }
 }

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,8 +49,10 @@ public final class TraceCacheManager {
     @NotNull
     public TraceData createTrace(@NotNull UUID traceId, @NotNull UUID playerId, 
                                   @NotNull String playerName, @NotNull Location location,
-                                  @NotNull List<ItemStack> items) {
-        TraceData data = new TraceData(traceId, playerId, playerName, location, items);
+                                  @NotNull List<ItemStack> items, @NotNull String storageType,
+                                  @NotNull Map<String, String> storageData) {
+        TraceData data = new TraceData(traceId, playerId, playerName, location, items,
+                System.currentTimeMillis(), storageType, storageData);
         cache.put(traceId, data);
         
         // 立即保存到文件
@@ -118,6 +121,14 @@ public final class TraceCacheManager {
             saveTrace(traceId);
         }
     }
+
+    public void updateTraceStorageData(@NotNull UUID traceId, @NotNull Map<String, String> storageData) {
+        TraceData data = cache.get(traceId);
+        if (data != null) {
+            data.updateStorageData(storageData);
+            saveTrace(traceId);
+        }
+    }
     
     /**
      * 检查墓碑是否为空
@@ -139,14 +150,18 @@ public final class TraceCacheManager {
         File file = getTraceFile(traceId);
         YamlConfiguration config = new YamlConfiguration();
         
+        config.set("schema-version", 2);
         config.set("trace-id", data.traceId().toString());
         config.set("player-id", data.playerId().toString());
         config.set("player-name", data.playerName());
         config.set("location.world", data.location().getWorld().getName());
+        config.set("location.world-id", data.location().getWorld().getUID().toString());
         config.set("location.x", data.location().getX());
         config.set("location.y", data.location().getY());
         config.set("location.z", data.location().getZ());
         config.set("creation-time", data.creationTime());
+        config.set("storage-type", data.storageType());
+        config.set("storage-data", data.storageData());
         config.set("items", data.items());
         
         try {
@@ -187,22 +202,26 @@ public final class TraceCacheManager {
                 UUID playerId = UUID.fromString(config.getString("player-id"));
                 String playerName = config.getString("player-name");
                 String worldName = config.getString("location.world");
+                String worldId = config.getString("location.world-id");
                 double x = config.getDouble("location.x");
                 double y = config.getDouble("location.y");
                 double z = config.getDouble("location.z");
                 long creationTime = config.getLong("creation-time");
+                String storageType = config.getString("storage-type", "block");
+                Map<String, String> storageData = readStorageData(config);
                 
                 @SuppressWarnings("unchecked")
                 List<ItemStack> items = (List<ItemStack>) config.getList("items", new ArrayList<>());
                 
-                org.bukkit.World world = Bukkit.getWorld(worldName);
+                org.bukkit.World world = findWorld(worldId, worldName);
                 if (world == null) {
                     plugin.getLogger().warning("无法加载墓碑 " + traceId + ": 世界 " + worldName + " 不存在");
                     continue;
                 }
                 
                 Location location = new Location(world, x, y, z);
-                TraceData data = new TraceData(traceId, playerId, playerName, location, items, creationTime);
+                TraceData data = new TraceData(
+                        traceId, playerId, playerName, location, items, creationTime, storageType, storageData);
                 cache.put(traceId, data);
                 loadedCount++;
                 
@@ -221,6 +240,34 @@ public final class TraceCacheManager {
      */
     private File getTraceFile(@NotNull UUID traceId) {
         return new File(dataFolder, traceId.toString() + ".yml");
+    }
+
+    private Map<String, String> readStorageData(YamlConfiguration config) {
+        var section = config.getConfigurationSection("storage-data");
+        if (section == null) {
+            return Map.of();
+        }
+        Map<String, String> result = new LinkedHashMap<>();
+        for (String key : section.getKeys(false)) {
+            String value = section.getString(key);
+            if (value != null) {
+                result.put(key, value);
+            }
+        }
+        return result;
+    }
+
+    private org.bukkit.World findWorld(@Nullable String worldId, @Nullable String worldName) {
+        if (worldId != null) {
+            try {
+                org.bukkit.World world = Bukkit.getWorld(UUID.fromString(worldId));
+                if (world != null) {
+                    return world;
+                }
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        return worldName == null ? null : Bukkit.getWorld(worldName);
     }
     
     /**

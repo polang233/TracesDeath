@@ -3,7 +3,6 @@ package cc.sbsj.mc.tracesDeath.config;
 import java.util.Locale;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.EntityType;
 
 /**
  * 插件配置管理类
@@ -43,8 +42,7 @@ public final class TraceConfig {
     
     // 各类型独立配置
     private final BlockConfig blockConfig;
-    private final MinecartConfig minecartConfig;
-    private final CorpseConfig corpseConfig;
+    private final MannequinConfig mannequinConfig;
 
     public TraceConfig(FileConfiguration config) {
         // 基础配置
@@ -81,8 +79,7 @@ public final class TraceConfig {
         
         // 各类型独立配置
         this.blockConfig = new BlockConfig(config);
-        this.minecartConfig = new MinecartConfig(config);
-        this.corpseConfig = new CorpseConfig(config);
+        this.mannequinConfig = new MannequinConfig(config);
     }
 
     // === 基础配置 ===
@@ -183,12 +180,8 @@ public final class TraceConfig {
         return blockConfig;
     }
     
-    public MinecartConfig minecart() {
-        return minecartConfig;
-    }
-    
-    public CorpseConfig corpse() {
-        return corpseConfig;
+    public MannequinConfig mannequin() {
+        return mannequinConfig;
     }
 
     // === 工具方法 ===
@@ -201,17 +194,6 @@ public final class TraceConfig {
         return material == null ? fallback : material;
     }
 
-    private static EntityType readEntityType(String value, EntityType fallback) {
-        if (value == null || value.isBlank()) {
-            return fallback;
-        }
-        try {
-            return EntityType.valueOf(value.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ignored) {
-            return fallback;
-        }
-    }
-    
     // === 内部配置类 ===
     
     /**
@@ -221,68 +203,37 @@ public final class TraceConfig {
         private final Material material;
         private final boolean autoRemoveWhenEmpty;
         private final boolean lavaProof;
-        private final boolean buoyant;
         private final InteractionConfig interaction;
         
         BlockConfig(FileConfiguration config) {
             this.material = readMaterial(config.getString("types.block.material", "CHEST"), Material.CHEST);
             this.autoRemoveWhenEmpty = config.getBoolean("types.block.auto-remove-when-empty", true);
             this.lavaProof = config.getBoolean("types.block.lava-proof", true);
-            this.buoyant = config.getBoolean("types.block.buoyant", true);
             this.interaction = new InteractionConfig(config, "types.block.interaction");
         }
         
         public Material material() { return material; }
         public boolean autoRemoveWhenEmpty() { return autoRemoveWhenEmpty; }
         public boolean lavaProof() { return lavaProof; }
-        public boolean buoyant() { return buoyant; }
         public InteractionConfig interaction() { return interaction; }
     }
-    
+
     /**
-     * 箱子矿车配置
+     * Mannequin 玩家模型配置
      */
-    public static final class MinecartConfig {
-        private final EntityType entityType;
+    public static final class MannequinConfig {
         private final boolean autoRemoveWhenEmpty;
         private final boolean lavaProof;
-        private final boolean buoyant;
         private final InteractionConfig interaction;
-        
-        MinecartConfig(FileConfiguration config) {
-            this.entityType = readEntityType(config.getString("types.minecart.entity-type", "CHEST_MINECART"), EntityType.CHEST_MINECART);
-            this.autoRemoveWhenEmpty = config.getBoolean("types.minecart.auto-remove-when-empty", true);
-            this.lavaProof = config.getBoolean("types.minecart.lava-proof", true);
-            this.buoyant = config.getBoolean("types.minecart.buoyant", true);
-            this.interaction = new InteractionConfig(config, "types.minecart.interaction");
+
+        MannequinConfig(FileConfiguration config) {
+            this.autoRemoveWhenEmpty = config.getBoolean("types.mannequin.auto-remove-when-empty", true);
+            this.lavaProof = config.getBoolean("types.mannequin.lava-proof", true);
+            this.interaction = new InteractionConfig(config, "types.mannequin.interaction");
         }
-        
-        public EntityType entityType() { return entityType; }
+
         public boolean autoRemoveWhenEmpty() { return autoRemoveWhenEmpty; }
         public boolean lavaProof() { return lavaProof; }
-        public boolean buoyant() { return buoyant; }
-        public InteractionConfig interaction() { return interaction; }
-    }
-    
-    /**
-     * 尸体实体配置
-     */
-    public static final class CorpseConfig {
-        private final boolean autoRemoveWhenEmpty;
-        private final boolean lavaProof;
-        private final boolean buoyant;
-        private final InteractionConfig interaction;
-        
-        CorpseConfig(FileConfiguration config) {
-            this.autoRemoveWhenEmpty = config.getBoolean("types.corpse.auto-remove-when-empty", true);
-            this.lavaProof = config.getBoolean("types.corpse.lava-proof", true);
-            this.buoyant = config.getBoolean("types.corpse.buoyant", true);
-            this.interaction = new InteractionConfig(config, "types.corpse.interaction");
-        }
-        
-        public boolean autoRemoveWhenEmpty() { return autoRemoveWhenEmpty; }
-        public boolean lavaProof() { return lavaProof; }
-        public boolean buoyant() { return buoyant; }
         public InteractionConfig interaction() { return interaction; }
     }
     

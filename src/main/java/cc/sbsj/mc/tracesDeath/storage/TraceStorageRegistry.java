@@ -28,12 +28,6 @@ public final class TraceStorageRegistry {
     public PlacementResult place(TraceContext context) {
         TraceStorageProvider provider = providers.get(context.config().storageType());
         if (provider == null || !provider.supports(context)) {
-            provider = providers.values().stream()
-                    .filter(candidate -> candidate.supports(context))
-                    .findFirst()
-                    .orElse(null);
-        }
-        if (provider == null) {
             return PlacementResult.failure(context.lang().text("storage.unsupported-type", Map.of("type", context.config().storageType())));
         }
         return provider.place(context);
