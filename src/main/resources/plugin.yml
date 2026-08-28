@@ -1,5 +1,5 @@
 name: TracesDeath
-description: 死亡痕迹插件 - 玩家死亡后将物品存入容器留在原地
+description: 高版本玩家模型死亡墓碑插件
 version: '2.0-SNAPSHOT'
 authors:
   - Polang
