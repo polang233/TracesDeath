@@ -31,11 +31,18 @@ storage:
 # GUI界面相关消息
 gui:
   title: "{player} 的遗物"
+  busy: "&e该墓碑正在被其他玩家查看。"
+  previous: "&e上一页"
+  next: "&e下一页"
+  page: "&7第 {page}/{pages} 页"
+  empty-removed: "&7墓碑已取空并移除。"
 
 interaction:
   missing: "&c该墓碑的数据不存在或已经结束。"
   too-far: "&c距离墓碑太远，无法交互。"
   not-owner: "&c你不能打开其他玩家的墓碑。"
+  inventory-full: "&e背包空间不足，墓碑中仍有 {remaining} 个物品。"
+  collected: "&a已放入背包 {moved} 个，掉落 {dropped} 个，墓碑剩余 {remaining} 个。"
 
 # 墓碑过期相关消息
 expiration:

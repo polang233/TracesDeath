@@ -1,10 +1,8 @@
 package cc.sbsj.mc.tracesDeath.events;
 
 import cc.sbsj.mc.tracesDeath.TracesDeath;
-import cc.sbsj.mc.tracesDeath.config.TraceConfig;
-import cc.sbsj.mc.tracesDeath.gui.TraceGuiManager;
 import cc.sbsj.mc.tracesDeath.trace.TraceCacheManager;
-import cc.sbsj.mc.tracesDeath.trace.TraceData;
+import cc.sbsj.mc.tracesDeath.trace.TraceInteractionService;
 import cc.sbsj.mc.tracesDeath.trace.TraceKeys;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -18,6 +16,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityRemoveEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.world.EntitiesLoadEvent;
@@ -28,18 +27,17 @@ import org.bukkit.persistence.PersistentDataType;
  * 处理 Mannequin 墓碑及其 Interaction 点击代理的交互和加载生命周期。
  */
 public final class MannequinEvents implements Listener {
-    private static final double MAX_INTERACTION_DISTANCE_SQUARED = 49.0;
-
     private final TracesDeath plugin;
     private final TraceKeys keys;
-    private final TraceGuiManager guiManager;
+    private final TraceInteractionService interactionService;
     private final TraceCacheManager cacheManager;
 
     public MannequinEvents(TracesDeath plugin, TraceKeys keys,
-                           TraceGuiManager guiManager, TraceCacheManager cacheManager) {
+                           TraceInteractionService interactionService,
+                           TraceCacheManager cacheManager) {
         this.plugin = plugin;
         this.keys = keys;
-        this.guiManager = guiManager;
+        this.interactionService = interactionService;
         this.cacheManager = cacheManager;
     }
 
@@ -53,7 +51,8 @@ public final class MannequinEvents implements Listener {
             return;
         }
         event.setCancelled(true);
-        interact(event.getPlayer(), traceId, ClickKind.RIGHT);
+        interactionService.interact(
+                event.getPlayer(), traceId, TraceInteractionService.ClickKind.RIGHT);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -66,7 +65,8 @@ public final class MannequinEvents implements Listener {
             return;
         }
         event.setCancelled(true);
-        interact(event.getPlayer(), traceId, ClickKind.RIGHT);
+        interactionService.interact(
+                event.getPlayer(), traceId, TraceInteractionService.ClickKind.RIGHT);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -77,7 +77,8 @@ public final class MannequinEvents implements Listener {
         }
         event.setCancelled(true);
         if (event.getDamager() instanceof Player player) {
-            interact(player, traceId, ClickKind.LEFT);
+            interactionService.interact(
+                    player, traceId, TraceInteractionService.ClickKind.LEFT);
         }
     }
 
@@ -96,6 +97,19 @@ public final class MannequinEvents implements Listener {
             plugin.getServer().getScheduler().runTask(
                     plugin, () -> plugin.traceManager().reconcileTrace(traceId));
         }
+    }
+
+    @EventHandler
+    public void onRemove(EntityRemoveEvent event) {
+        UUID traceId = readTraceId(event.getEntity());
+        if (traceId == null
+                || event.getCause() == EntityRemoveEvent.Cause.UNLOAD
+                || cacheManager.getTrace(traceId) == null
+                || plugin.traceManager().isTerminating(traceId)) {
+            return;
+        }
+        plugin.getServer().getScheduler().runTask(
+                plugin, () -> plugin.traceManager().reconcileTrace(traceId));
     }
 
     @EventHandler
@@ -120,44 +134,6 @@ public final class MannequinEvents implements Listener {
                 }
             });
         }
-    }
-
-    private void interact(Player player, UUID traceId, ClickKind clickKind) {
-        TraceData data = cacheManager.getTrace(traceId);
-        if (data == null) {
-            plugin.lang().send(player, "interaction.missing");
-            return;
-        }
-
-        TraceConfig.InteractionConfig interaction = plugin.traceConfig().mannequin().interaction();
-        if (!matches(interaction.clickType(), clickKind)) {
-            return;
-        }
-        if (!player.getWorld().equals(data.location().getWorld())
-                || player.getLocation().distanceSquared(data.location()) > MAX_INTERACTION_DISTANCE_SQUARED) {
-            plugin.lang().send(player, "interaction.too-far");
-            return;
-        }
-        if (plugin.traceConfig().ownerOnly()
-                && !data.playerId().equals(player.getUniqueId())
-                && !player.hasPermission("tracesdeath.admin.bypass")
-                && !player.hasPermission("tracesdeath.admin")) {
-            plugin.lang().send(player, "interaction.not-owner");
-            return;
-        }
-
-        guiManager.openTraceGui(player, traceId);
-        if (plugin.traceConfig().debug()) {
-            plugin.getLogger().info(player.getName() + " 点击了 Mannequin 墓碑: " + traceId);
-        }
-    }
-
-    private boolean matches(TraceConfig.InteractionConfig.ClickType configured, ClickKind actual) {
-        return switch (configured) {
-            case RIGHT_CLICK -> actual == ClickKind.RIGHT;
-            case LEFT_CLICK -> actual == ClickKind.LEFT;
-            case BOTH -> true;
-        };
     }
 
     private UUID readTraceId(Entity entity) {
@@ -193,10 +169,5 @@ public final class MannequinEvents implements Listener {
             plugin.getLogger().info(plugin.lang().text(
                     "storage.mannequin.orphan-removed", Map.of("role", role == null ? "unknown" : role)));
         }
-    }
-
-    private enum ClickKind {
-        LEFT,
-        RIGHT
     }
 }

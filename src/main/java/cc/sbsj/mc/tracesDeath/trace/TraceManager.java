@@ -8,6 +8,7 @@ import cc.sbsj.mc.tracesDeath.storage.TraceStorageRegistry;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.Bukkit;
@@ -29,6 +30,7 @@ public final class TraceManager {
     private final TraceStorageRegistry storageRegistry;
     private final TraceCacheManager cacheManager;
     private final Map<UUID, TraceInfo> activeTraces = new ConcurrentHashMap<>();
+    private final Set<UUID> terminatingTraces = ConcurrentHashMap.newKeySet();
     private BukkitTask cleanupTask;
     
     public TraceManager(@NotNull TracesDeath plugin, @NotNull TraceStorageRegistry storageRegistry,
@@ -114,26 +116,28 @@ public final class TraceManager {
      * @return 如果成功移除返回 true
      */
     public boolean removeTrace(@NotNull UUID traceId, boolean dropItems) {
-        TraceInfo info = activeTraces.get(traceId);
-        if (info == null) {
+        if (!terminatingTraces.add(traceId)) {
             return false;
         }
+        try {
+            TraceInfo info = activeTraces.get(traceId);
+            if (info == null) {
+                return false;
+            }
 
-        TraceData data = cacheManager.getTrace(traceId);
-        if (data == null) {
-            activeTraces.remove(traceId);
-            return false;
-        }
+            TraceData data = cacheManager.getTrace(traceId);
+            if (data == null) {
+                activeTraces.remove(traceId);
+                return false;
+            }
 
-        TraceStorageProvider provider = storageRegistry.find(data.storageType()).orElse(null);
-        if (provider != null && !provider.cleanup(data)) {
-            plugin.getLogger().warning("无法清理墓碑世界对象，已保留数据: " + traceId);
-            return false;
-        }
+            TraceStorageProvider provider = storageRegistry.find(data.storageType()).orElse(null);
+            if (provider != null && !provider.cleanup(data)) {
+                plugin.getLogger().warning("无法清理墓碑世界对象，已保留数据: " + traceId);
+                return false;
+            }
 
-        // 如果需要掉落物品，从缓存中获取并掉落
-        if (dropItems) {
-            if (!data.isEmpty()) {
+            if (dropItems && !data.isEmpty()) {
                 for (ItemStack item : data.items()) {
                     if (item != null && !item.getType().isAir()) {
                         Location dropLocation = info.location().clone().add(0.5, 0.5, 0.5);
@@ -141,17 +145,21 @@ public final class TraceManager {
                     }
                 }
             }
+
+            cacheManager.removeTrace(traceId);
+            activeTraces.remove(traceId);
+
+            if (plugin.traceConfig().debug()) {
+                plugin.getLogger().info("移除墓碑: " + traceId + " | 玩家: " + info.playerName());
+            }
+            return true;
+        } finally {
+            terminatingTraces.remove(traceId);
         }
-        
-        // 从缓存中移除
-        cacheManager.removeTrace(traceId);
-        activeTraces.remove(traceId);
-        
-        if (plugin.traceConfig().debug()) {
-            plugin.getLogger().info("移除墓碑: " + traceId + " | 玩家: " + info.playerName());
-        }
-        
-        return true;
+    }
+
+    public boolean isTerminating(@NotNull UUID traceId) {
+        return terminatingTraces.contains(traceId);
     }
     
     /**

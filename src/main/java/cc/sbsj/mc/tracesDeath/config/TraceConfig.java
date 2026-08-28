@@ -39,6 +39,7 @@ public final class TraceConfig {
     private final boolean ownerOnly;
     private final boolean allowBreak;
     private final boolean explosionProof;
+    private final double interactionDistanceSquared;
     
     // 各类型独立配置
     private final BlockConfig blockConfig;
@@ -76,6 +77,8 @@ public final class TraceConfig {
         this.ownerOnly = config.getBoolean("protection.owner-only", false);
         this.allowBreak = config.getBoolean("protection.allow-break", false);
         this.explosionProof = config.getBoolean("protection.explosion-proof", true);
+        double interactionDistance = Math.max(1.0, config.getDouble("interaction.max-distance", 7.0));
+        this.interactionDistanceSquared = interactionDistance * interactionDistance;
         
         // 各类型独立配置
         this.blockConfig = new BlockConfig(config);
@@ -173,6 +176,10 @@ public final class TraceConfig {
     public boolean explosionProof() {
         return explosionProof;
     }
+
+    public double interactionDistanceSquared() {
+        return interactionDistanceSquared;
+    }
     
     // === 各类型独立配置 ===
     
@@ -182,6 +189,22 @@ public final class TraceConfig {
     
     public MannequinConfig mannequin() {
         return mannequinConfig;
+    }
+
+    public InteractionConfig interactionFor(String storageType) {
+        return switch (storageType) {
+            case "block" -> blockConfig.interaction();
+            case "mannequin" -> mannequinConfig.interaction();
+            default -> null;
+        };
+    }
+
+    public boolean autoRemoveWhenEmpty(String storageType) {
+        return switch (storageType) {
+            case "block" -> blockConfig.autoRemoveWhenEmpty();
+            case "mannequin" -> mannequinConfig.autoRemoveWhenEmpty();
+            default -> false;
+        };
     }
 
     // === 工具方法 ===

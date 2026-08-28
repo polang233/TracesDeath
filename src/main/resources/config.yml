@@ -58,6 +58,11 @@ protection:
   # 是否防止爆炸破坏墓碑容器
   explosion-proof: true
 
+# === 统一交互限制 ===
+interaction:
+  # 玩家必须在此距离内才能打开或快速领取墓碑
+  max-distance: 7.0
+
 # === 各存储类型独立配置 ===
 types:
   # 方块容器配置（仅当 storage.type=block 时生效）
@@ -91,7 +96,7 @@ types:
       height: 1.2
     # 交互模式配置
     interaction:
-      click-type: RIGHT_CLICK
+      click-type: BOTH
       mode: OPEN_GUI
       auto-equip: true
       conflict-handling: TRY_INVENTORY
