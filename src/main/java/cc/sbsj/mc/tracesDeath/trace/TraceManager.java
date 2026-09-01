@@ -13,7 +13,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.entity.Player;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
@@ -72,7 +72,7 @@ public final class TraceManager {
      * @return 创建结果
      */
     @NotNull
-    public PlacementResult createTrace(@NotNull Player player, @NotNull Location location, @NotNull Collection<ItemStack> drops) {
+    public PlacementResult createTrace(@NotNull OfflinePlayer player, @NotNull Location location, @NotNull Collection<ItemStack> drops) {
         UUID traceId = UUID.randomUUID();
         TraceContext context = new TraceContext(
                 traceId,

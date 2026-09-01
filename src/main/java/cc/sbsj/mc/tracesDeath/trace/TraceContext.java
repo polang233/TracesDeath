@@ -5,7 +5,7 @@ import cc.sbsj.mc.tracesDeath.config.Lang;
 import java.util.List;
 import java.util.UUID;
 import org.bukkit.Location;
-import org.bukkit.entity.Player;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.inventory.ItemStack;
 
 /**
@@ -13,7 +13,7 @@ import org.bukkit.inventory.ItemStack;
  */
 public record TraceContext(
         UUID traceId,
-        Player player,
+        OfflinePlayer player,
         Location location,
         List<ItemStack> drops,
         TraceConfig config,

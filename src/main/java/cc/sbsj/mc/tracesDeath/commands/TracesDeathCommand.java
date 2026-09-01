@@ -14,8 +14,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -243,6 +245,10 @@ public final class TracesDeathCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleDebug(CommandSender sender, String label, String[] args) {
+        if (args.length >= 2 && args[1].equalsIgnoreCase("synth")) {
+            handleDebugSynth(sender, args);
+            return;
+        }
         if (args.length < 2 || !args[1].equalsIgnoreCase("create")) {
             plugin.lang().send(sender, "command.usage-debug-create", Map.of("label", label));
             return;
@@ -262,6 +268,40 @@ public final class TracesDeathCommand implements CommandExecutor, TabCompleter {
 
         PlacementResult result = traceManager.createTrace(player, player.getLocation(), List.of(item));
         sender.sendMessage(plugin.lang().component(plugin.lang().text("prefix") + result.message()));
+    }
+
+    /**
+     * 控制台合成墓碑：debug synth <玩家名> [x y z]，不依赖在线玩家即可回归创建链路。
+     */
+    private void handleDebugSynth(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage(plugin.lang().component(
+                    plugin.lang().text("prefix") + "&e用法: /td debug synth <玩家名> [x y z]"));
+            return;
+        }
+        OfflinePlayer target = Bukkit.getOfflinePlayer(args[2]);
+        World world = Bukkit.getWorlds().getFirst();
+        double x = 0.5;
+        double y = world.getHighestBlockYAt(0, 0) + 1.0;
+        double z = 0.5;
+        if (args.length >= 6) {
+            try {
+                x = Double.parseDouble(args[3]);
+                y = Double.parseDouble(args[4]);
+                z = Double.parseDouble(args[5]);
+            } catch (NumberFormatException ignored) {
+                sender.sendMessage(plugin.lang().component(
+                        plugin.lang().text("prefix") + "&c坐标格式无效。"));
+                return;
+            }
+        }
+        Location location = new Location(world, x, y, z);
+        List<ItemStack> drops = List.of(new ItemStack(Material.DIAMOND, 3), new ItemStack(Material.IRON_SWORD, 1));
+        PlacementResult result = traceManager.createTrace(target, location, drops);
+        sender.sendMessage(plugin.lang().component(
+                plugin.lang().text("prefix") + (result.success()
+                        ? "&a合成墓碑创建成功: " + result.message()
+                        : "&c合成墓碑创建失败: " + result.message())));
     }
 
     private void sendHelp(CommandSender sender, String label) {

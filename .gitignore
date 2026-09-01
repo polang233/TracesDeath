@@ -19,3 +19,6 @@ hs_err_pid*
 
 # Common working directory
 run
+
+# Local test tooling (RCON client etc.)
+tools/
