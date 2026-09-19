@@ -9,14 +9,15 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:26.2.build.+")
-    testImplementation("io.papermc.paper:paper-api:26.2.build.111-stable")
+    compileOnly("io.papermc.paper:paper-api:1.21.9-R0.1-SNAPSHOT")
+    testImplementation("io.papermc.paper:paper-api:1.21.9-R0.1-SNAPSHOT")
+    testImplementation("org.mockito:mockito-core:5.20.0")
     testImplementation("org.junit.jupiter:junit-jupiter:5.14.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.14.3")
 }
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(25)
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
 }
 
 tasks {
@@ -25,11 +26,9 @@ tasks {
     }
 
     runServer {
-        // Configure the Minecraft version for our task.
-        // This is the only required configuration besides applying the plugin.
-        // Your plugin's jar (or shadowJar if present) will be used automatically.
-        minecraftVersion("26.2")
-        jvmArgs("-Xms2G", "-Xmx2G")
+        minecraftVersion("1.21.9")
+        runDirectory.set(file("run-core"))
+        jvmArgs("-Xms1G", "-Xmx2G", "-Dterminal.jline=false", "-Dterminal.ansi=false")
     }
 
 }

@@ -1,0 +1,6 @@
+{
+  "name": "tracesdeath-smoke",
+  "private": true,
+  "scripts": {"smoke": "node smoke-corpse.cjs"},
+  "dependencies": {"mineflayer": "4.39.0"}
+}

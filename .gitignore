@@ -22,3 +22,6 @@ run
 
 # Local test tooling (RCON client etc.)
 tools/
+
+run-core/
+scripts/node_modules/
