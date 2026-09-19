@@ -1,3 +1,8 @@
 # true：仅死者本人或 tracesdeath.admin 可以领取。
 # 修改后重启服务器。
 owner-only: false
+
+# 一键领取模式：
+# false：恢复到死亡时的原槽位，原槽位已有物品掉落在玩家脚下。
+# true：收入背包，装不下的遗体物品掉落在玩家脚下。
+claim-all-to-inventory: false

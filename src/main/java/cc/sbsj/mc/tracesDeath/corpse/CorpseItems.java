@@ -81,25 +81,51 @@ public final class CorpseItems {
         return new Transfer(after, remaining);
     }
 
-    public static ItemStack[] storageArray(Map<Integer, ItemStack> items) {
-        ItemStack[] result = new ItemStack[36];
+    public static ItemStack[] inventoryArray(Map<Integer, ItemStack> items, int size) {
+        ItemStack[] result = new ItemStack[size];
         items.forEach((slot, item) -> result[slot] = item.clone());
         return result;
     }
 
+    /** Restore the original slots, or merge into storage. Overflow is planned before any mutation. */
+    public static ClaimPlan planAll(Map<Integer, ItemStack> before, Map<Integer, ItemStack> source,
+                                    boolean toInventory, int inventoryMax) {
+        Map<Integer, ItemStack> after = copy(before);
+        List<ItemStack> drops = new ArrayList<>();
+        for (var entry : new TreeMap<>(source).entrySet()) {
+            int slot = entry.getKey();
+            ItemStack item = entry.getValue();
+            if (!toInventory && slot < 41) {
+                ItemStack displaced = after.put(slot, item.clone());
+                if (!empty(displaced)) drops.add(displaced.clone());
+            } else {
+                Transfer transfer = plan(after, item, inventoryMax);
+                after = transfer.after();
+                if (transfer.remaining() > 0) {
+                    ItemStack leftover = item.clone();
+                    leftover.setAmount(transfer.remaining());
+                    drops.add(leftover);
+                }
+            }
+        }
+        return new ClaimPlan(after, drops);
+    }
+
+    public record ClaimPlan(Map<Integer, ItemStack> after, List<ItemStack> drops) {}
+
     /** Fixed GUI mapping; empty source slots stay empty. */
     public static int sourceSlot(int page, int guiSlot) {
-        if (page > 0) return guiSlot >= 0 && guiSlot < 45 ? 41 + (page - 1) * 45 + guiSlot : -1;
         if (guiSlot >= 0 && guiSlot < 4) return 39 - guiSlot;
         if (guiSlot == 4) return 40;
-        if (guiSlot >= 9 && guiSlot < 36) return guiSlot;
-        if (guiSlot >= 36 && guiSlot < 45) return guiSlot - 36;
-        return -1;
+        if (guiSlot < 18 || guiSlot >= 54) return -1;
+        if (page > 0) return 41 + (page - 1) * 36 + guiSlot - 18;
+        if (guiSlot < 45) return guiSlot - 9;
+        return guiSlot - 45;
     }
 
     public static int pages(Map<Integer, ItemStack> items) {
         int max = items.keySet().stream().mapToInt(Integer::intValue).max().orElse(40);
-        return max < 41 ? 1 : 2 + (max - 41) / 45;
+        return max < 41 ? 1 : 2 + (max - 41) / 36;
     }
 
     public record Transfer(Map<Integer, ItemStack> after, int remaining) {}

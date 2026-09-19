@@ -12,13 +12,13 @@ class CorpseTest {
         PlayerProfile profile = mock(PlayerProfile.class);
         when(profile.clone()).thenReturn(profile);
         return new Corpse(UUID.randomUUID(), UUID.randomUUID(), "Player", UUID.randomUUID(), 0, 64, 0,
-                0, 0, profile, Map.of(39, CorpseItemsTest.item(Material.DIAMOND_HELMET, 1)));
+                0, 0, profile, 1700000000000L, Map.of(39, CorpseItemsTest.item(Material.DIAMOND_HELMET, 1)));
     }
 
     @Test void preparedCopyDoesNotPublishRemovalAndRollbackRestoresClaimability() {
         Corpse original = corpse();
         Corpse prepared = original.copy();
-        prepared.begin(new Corpse.PendingClaim(UUID.randomUUID(), Map.of(), Map.of(), Map.of()));
+        prepared.begin(new Corpse.PendingClaim(UUID.randomUUID(), 41, Map.of(), Map.of(), Map.of(), List.of(), false));
         assertNull(original.pending());
         assertFalse(original.empty());
         prepared.finish(false);
@@ -28,12 +28,32 @@ class CorpseTest {
 
     @Test void commitConsumesExactlyOnceAndEndsEmptyCorpse() {
         Corpse corpse = corpse();
-        corpse.begin(new Corpse.PendingClaim(UUID.randomUUID(), Map.of(), Map.of(), Map.of()));
+        corpse.begin(new Corpse.PendingClaim(UUID.randomUUID(), 41, Map.of(), Map.of(), Map.of(), List.of(), false));
         assertThrows(IllegalStateException.class, () -> corpse.begin(corpse.pending()));
         corpse.finish(true);
         assertTrue(corpse.empty());
         assertNull(corpse.pending());
         assertThrows(IllegalStateException.class, () -> corpse.finish(true));
+    }
+
+    @Test void deathTimeSurvivesCopiesAndClaims() {
+        Corpse corpse = corpse();
+        assertEquals(1700000000000L, corpse.copy().deathTime);
+        corpse.begin(new Corpse.PendingClaim(UUID.randomUUID(), 41, Map.of(), Map.of(), Map.of(), List.of(), false));
+        corpse.finish(true);
+        assertEquals(1700000000000L, corpse.deathTime);
+    }
+
+    @Test void droppedItemsHaveAnExplicitUncertainStage() {
+        Corpse corpse = corpse();
+        corpse.begin(new Corpse.PendingClaim(UUID.randomUUID(), 41, Map.of(), Map.of(), Map.of(),
+                List.of(CorpseItemsTest.item(Material.DIAMOND, 4)), false));
+        Corpse dropping = corpse.copy();
+        dropping.startDrops();
+        assertFalse(corpse.pending().dropsStarted());
+        assertTrue(dropping.pending().dropsStarted());
+        assertEquals(4, dropping.pending().drops().getFirst().getAmount());
+        assertThrows(IllegalStateException.class, dropping::startDrops);
     }
 
     @Test void returnedItemCopiesCannotMutateInventory() {

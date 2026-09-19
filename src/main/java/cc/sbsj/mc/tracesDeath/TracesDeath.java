@@ -1,5 +1,6 @@
 package cc.sbsj.mc.tracesDeath;
 
+import cc.sbsj.mc.tracesDeath.commands.TracesDeathCommand;
 import cc.sbsj.mc.tracesDeath.corpse.CorpseService;
 import cc.sbsj.mc.tracesDeath.corpse.CorpseStore;
 import java.nio.file.Files;
@@ -22,11 +23,12 @@ public final class TracesDeath extends JavaPlugin {
                 }
             }
             service = new CorpseService(this, new CorpseStore(getDataFolder().toPath().resolve("corpses")),
-                    getConfig().getBoolean("owner-only", false));
+                    getConfig().getBoolean("owner-only", false), getConfig().getBoolean("claim-all-to-inventory", false));
             service.start();
             var command = Objects.requireNonNull(getCommand("tracesdeath"));
-            command.setExecutor(service);
-            command.setTabCompleter(service);
+            var handler = new TracesDeathCommand(service);
+            command.setExecutor(handler);
+            command.setTabCompleter(handler);
             getLogger().info("遗体核心已启用：非持久化 Mannequin、固定槽位、只取不存。");
         } catch (Exception exception) {
             getLogger().log(java.util.logging.Level.SEVERE, "遗体核心启动失败，未接管死亡掉落", exception);

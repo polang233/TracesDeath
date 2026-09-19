@@ -1,7 +1,12 @@
 package cc.sbsj.mc.tracesDeath.corpse;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.*;
@@ -12,6 +17,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 /** Inventory contents are display copies. Every withdrawal goes through CorpseService. */
 public final class CorpseMenu implements Listener {
+    private static final int CLAIM_ALL = 5;
+    private static final int INFO = 6;
+    private static final int PREVIOUS = 7;
+    private static final int NEXT = 8;
+    private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z")
+            .withZone(ZoneId.systemDefault());
     private final JavaPlugin plugin;
     private final CorpseService service;
     private final Map<UUID, Session> viewers = new HashMap<>();
@@ -39,7 +50,6 @@ public final class CorpseMenu implements Listener {
         locks.put(id, player.getUniqueId());
         render(session);
         player.openInventory(session.inventory);
-        // Another plugin may cancel InventoryOpenEvent.
         if (player.getOpenInventory().getTopInventory().getHolder() != session) release(player.getUniqueId(), session);
     }
 
@@ -47,28 +57,57 @@ public final class CorpseMenu implements Listener {
         Corpse corpse = service.get(session.id);
         if (corpse == null) return;
         var items = corpse.items();
-        session.page = Math.min(session.page, CorpseItems.pages(items) - 1);
+        int pages = CorpseItems.pages(items);
+        session.page = Math.min(session.page, pages - 1);
         session.inventory.clear();
-        for (int slot = 0; slot < 45; slot++) {
+        for (int slot = 0; slot < 54; slot++) {
             int source = CorpseItems.sourceSlot(session.page, slot);
             ItemStack item = items.get(source);
             if (item != null) session.inventory.setItem(slot, item.clone());
         }
-        if (session.page == 0) {
-            String[] names = {"头盔", "胸甲", "护腿", "靴子", "副手"};
-            for (int slot = 0; slot < 5; slot++) {
-                if (session.inventory.getItem(slot) == null) session.inventory.setItem(slot, label(Material.GRAY_STAINED_GLASS_PANE, names[slot] + " · 空"));
-            }
-            for (int slot = 5; slot < 9; slot++) session.inventory.setItem(slot, label(Material.BLACK_STAINED_GLASS_PANE, " "));
+        String[] names = {"头盔", "胸甲", "护腿", "靴子", "副手"};
+        for (int slot = 0; slot < 5; slot++) {
+            if (session.inventory.getItem(slot) == null) session.inventory.setItem(slot,
+                    label(Material.GRAY_STAINED_GLASS_PANE, names[slot] + " · 空", List.of()));
         }
-        if (session.page > 0) session.inventory.setItem(45, label(Material.ARROW, "上一页"));
-        session.inventory.setItem(49, label(Material.PAPER, session.page == 0 ? "装备 / 背包 / 快捷栏 · 点击领取" : "额外掉落 · " + session.page));
-        if (session.page + 1 < CorpseItems.pages(items)) session.inventory.setItem(53, label(Material.ARROW, "额外掉落 / 下一页"));
+        for (int slot = 9; slot < 18; slot++) session.inventory.setItem(slot,
+                label(Material.BLACK_STAINED_GLASS_PANE, " ", List.of()));
+        session.inventory.setItem(CLAIM_ALL, label(Material.CHEST, "一键领取",
+                service.claimAllToInventory()
+                        ? List.of("将所有物品收入背包", "装不下的遗体物品掉落在脚下")
+                        : List.of("恢复所有物品到死亡时的原槽位", "原槽位已有的物品掉落在脚下", "额外掉落收入背包，装不下的掉落在脚下")));
+        List<String> info = new ArrayList<>(information(corpse));
+        info.add("当前页面：" + (session.page == 0 ? "背包与快捷栏" : "额外掉落 " + session.page)
+                + " · " + (session.page + 1) + "/" + pages);
+        info.add("点击将信息发送到聊天栏");
+        session.inventory.setItem(INFO, label(Material.CLOCK, "遗体信息", info));
+        session.inventory.setItem(PREVIOUS, session.page > 0
+                ? label(Material.ARROW, "上一页", List.of())
+                : label(Material.BLACK_STAINED_GLASS_PANE, " ", List.of()));
+        session.inventory.setItem(NEXT, session.page + 1 < pages
+                ? label(Material.ARROW, "额外掉落 / 下一页", List.of())
+                : label(Material.BLACK_STAINED_GLASS_PANE, " ", List.of()));
     }
 
-    private ItemStack label(Material type, String text) {
+    static List<String> information(Corpse corpse) {
+        World world = Bukkit.getWorld(corpse.world);
+        int count = corpse.items().values().stream().mapToInt(ItemStack::getAmount).sum();
+        return List.of(
+                "死亡者 ID：" + corpse.name,
+                "UUID：" + corpse.owner,
+                "死亡时间：" + (corpse.deathTime > 0 ? TIME.format(Instant.ofEpochMilli(corpse.deathTime)) : "未记录"),
+                "位置：" + (world == null ? corpse.world : world.getName()) + " "
+                        + (int) Math.floor(corpse.x) + " " + (int) Math.floor(corpse.y) + " " + (int) Math.floor(corpse.z),
+                "剩余物品数量：" + count);
+    }
+
+    private ItemStack label(Material type, String text, List<String> lore) {
         ItemStack item = new ItemStack(type);
-        item.editMeta(meta -> meta.displayName(Component.text(text)));
+        item.editMeta(meta -> {
+            meta.displayName(Component.text(text, NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
+            meta.lore(lore.stream().map(line -> Component.text(line, NamedTextColor.GRAY)
+                    .decoration(TextDecoration.ITALIC, false)).toList());
+        });
         return item;
     }
 
@@ -86,11 +125,14 @@ public final class CorpseMenu implements Listener {
             session.queued = false;
             if (!player.isOnline() || viewers.get(player.getUniqueId()) != session) return;
             if (!service.access(player, session.id)) { player.closeInventory(); return; }
-            if (slot == 45 && session.page > 0) session.page--;
-            else if (slot == 53 && session.page + 1 < CorpseItems.pages(service.get(session.id).items())) session.page++;
+            Corpse corpse = service.get(session.id);
+            if (slot == CLAIM_ALL) service.claimAll(player, session.id);
+            else if (slot == INFO) information(corpse).forEach(player::sendMessage);
+            else if (slot == PREVIOUS && session.page > 0) session.page--;
+            else if (slot == NEXT && session.page + 1 < CorpseItems.pages(corpse.items())) session.page++;
             else {
                 int source = CorpseItems.sourceSlot(session.page, slot);
-                if (source >= 0) service.claim(player, session.id, source);
+                if (source >= 0 && corpse.items().containsKey(source)) service.claim(player, session.id, source);
             }
             if (viewers.get(player.getUniqueId()) == session) render(session);
         });

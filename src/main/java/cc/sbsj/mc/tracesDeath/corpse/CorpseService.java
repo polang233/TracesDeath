@@ -3,7 +3,6 @@ package cc.sbsj.mc.tracesDeath.corpse;
 import java.util.*;
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;
-import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.*;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -11,18 +10,20 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /** All inventory/state transitions are serialized on the server thread. */
-public final class CorpseService implements Listener, CommandExecutor, TabCompleter {
+public final class CorpseService implements Listener {
     private final JavaPlugin plugin;
     private final CorpseStore store;
     private final Map<UUID, Corpse> corpses = new LinkedHashMap<>();
     private final boolean ownerOnly;
+    private final boolean claimAllToInventory;
     private CorpseMenu menu;
     private CorpseEntities entities;
 
-    public CorpseService(JavaPlugin plugin, CorpseStore store, boolean ownerOnly) throws Exception {
+    public CorpseService(JavaPlugin plugin, CorpseStore store, boolean ownerOnly, boolean claimAllToInventory) throws Exception {
         this.plugin = plugin;
         this.store = store;
         this.ownerOnly = ownerOnly;
+        this.claimAllToInventory = claimAllToInventory;
         for (Corpse corpse : store.load()) corpses.put(corpse.id, corpse);
     }
 
@@ -63,7 +64,7 @@ public final class CorpseService implements Listener, CommandExecutor, TabComple
         Corpse corpse = new Corpse(UUID.randomUUID(), player.getUniqueId(), player.getName(),
                 player.getWorld().getUID(), location.getX(), y, location.getZ(),
                 Math.round(location.getYaw() / 90f) * 90f, player.getInventory().getHeldItemSlot(),
-                player.getPlayerProfile(), items);
+                player.getPlayerProfile(), System.currentTimeMillis(), items);
         try {
             store.save(corpse);
         } catch (Exception exception) {
@@ -101,13 +102,15 @@ public final class CorpseService implements Listener, CommandExecutor, TabComple
         return corpses.values().stream().anyMatch(c -> c.pending() != null && c.pending().player().equals(player));
     }
 
+    public boolean claimAllToInventory() { return claimAllToInventory; }
+
     public void claim(Player player, UUID id, int slot) {
         if (!access(player, id)) return;
         Corpse corpse = corpses.get(id);
         var items = corpse.items();
         var source = items.get(slot);
         if (source == null) return;
-        var before = CorpseItems.snapshot(player.getInventory().getStorageContents());
+        var before = CorpseItems.snapshot(player.getInventory().getContents());
         var transfer = CorpseItems.plan(before, source, player.getInventory().getMaxStackSize());
         if (transfer.remaining() == source.getAmount()) {
             player.sendMessage("背包已满，物品仍保留在遗体中。");
@@ -118,25 +121,57 @@ public final class CorpseService implements Listener, CommandExecutor, TabComple
             source.setAmount(transfer.remaining());
             items.put(slot, source);
         }
+        transfer(player, corpse, new Corpse.PendingClaim(player.getUniqueId(), 41, before,
+                transfer.after(), items, List.of(), false));
+    }
+
+    public void claimAll(Player player, UUID id) {
+        if (!access(player, id)) return;
+        Corpse corpse = corpses.get(id);
+        var before = CorpseItems.snapshot(player.getInventory().getContents());
+        var plan = CorpseItems.planAll(before, corpse.items(), claimAllToInventory, player.getInventory().getMaxStackSize());
+        transfer(player, corpse, new Corpse.PendingClaim(player.getUniqueId(), 41, before,
+                plan.after(), Map.of(), plan.drops(), false));
+    }
+
+    private void transfer(Player player, Corpse corpse, Corpse.PendingClaim claim) {
         Corpse prepared = corpse.copy();
-        prepared.begin(new Corpse.PendingClaim(player.getUniqueId(), before, transfer.after(), items));
+        prepared.begin(claim);
         try {
-            store.save(prepared); // Durable intent before touching the player's inventory.
+            store.save(prepared);
         } catch (Exception exception) {
-            failure("领取准备保存失败，未发放物品", id, exception);
+            failure("领取准备保存失败，未发放物品", corpse.id, exception);
             player.sendMessage("保存失败，本次未领取，请联系管理员。");
             return;
         }
-        corpses.put(id, prepared);
+        corpses.put(corpse.id, prepared);
         try {
-            player.getInventory().setStorageContents(CorpseItems.storageArray(transfer.after()));
+            player.getInventory().setContents(CorpseItems.inventoryArray(claim.after(), claim.inventorySize()));
             player.saveData();
-            finish(prepared, true);
+            deliverDropsAndFinish(player, prepared);
+            // Refresh the final active view after the corpse menu may have closed.
+            player.updateInventory();
         } catch (Exception exception) {
-            failure("领取未完成，已锁定遗体等待恢复", id, exception);
-            menu.closeCorpse(id);
+            failure("领取未完成，已锁定遗体等待恢复", corpse.id, exception);
+            menu.closeCorpse(corpse.id);
             player.kick(Component.text("遗体领取保存未完成，请重新连接以恢复。"));
         }
+    }
+
+    private void deliverDropsAndFinish(Player player, Corpse prepared) throws Exception {
+        var drops = prepared.pending().drops();
+        if (!drops.isEmpty()) {
+            Corpse dropping = prepared.copy();
+            dropping.startDrops();
+            store.save(dropping);
+            corpses.put(dropping.id, dropping);
+            // A crash during world item spawning requires review rather than replaying the drops.
+            for (var item : drops) {
+                player.getWorld().dropItemNaturally(player.getLocation(), item.clone());
+            }
+            prepared = dropping;
+        }
+        finish(prepared, true);
     }
 
     private void finish(Corpse prepared, boolean delivered) throws Exception {
@@ -161,8 +196,10 @@ public final class CorpseService implements Listener, CommandExecutor, TabComple
             Corpse.PendingClaim pending = corpse.pending();
             if (pending == null || !pending.player().equals(player.getUniqueId())) continue;
             try {
-                var current = CorpseItems.snapshot(player.getInventory().getStorageContents());
-                if (current.equals(pending.after())) finish(corpse, true);
+                if (pending.dropsStarted()) throw new IllegalStateException("掉落物发放结果需要人工核对");
+                var current = CorpseItems.snapshot(pending.inventorySize() == 36
+                        ? player.getInventory().getStorageContents() : player.getInventory().getContents());
+                if (current.equals(pending.after())) deliverDropsAndFinish(player, corpse);
                 else if (current.equals(pending.before())) finish(corpse, false);
                 else throw new IllegalStateException("玩家库存与领取前后记录均不相符，需要人工核对");
             } catch (Exception exception) {
@@ -177,58 +214,15 @@ public final class CorpseService implements Listener, CommandExecutor, TabComple
         plugin.getLogger().log(java.util.logging.Level.SEVERE, message + ": " + id, exception);
     }
 
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length == 0 || args[0].equalsIgnoreCase("list")) {
-            boolean admin = sender.hasPermission("tracesdeath.admin");
-            long count = 0;
-            for (Corpse corpse : corpses.values()) {
-                if (admin || sender instanceof Player player && corpse.owner.equals(player.getUniqueId())) {
-                    sender.sendMessage(corpse.id + " · " + corpse.name + " · " + position(corpse)
-                            + (corpse.pending() != null ? " · 领取待恢复" : ""));
-                    count++;
-                }
-            }
-            sender.sendMessage("共 " + count + " 具遗体。");
-            return true;
-        }
-        if (args[0].equalsIgnoreCase("locate") && sender instanceof Player player) {
-            for (Corpse corpse : corpses.values()) {
-                if (corpse.owner.equals(player.getUniqueId())) player.sendMessage(position(corpse));
-            }
-            return true;
-        }
-        // Recovery is deliberately console-only and requires an explicit outcome.
-        if (args[0].equalsIgnoreCase("recover") && sender instanceof ConsoleCommandSender && args.length == 3) {
-            try {
-                Corpse corpse = corpses.get(UUID.fromString(args[1]));
-                if (corpse == null || corpse.pending() == null) throw new IllegalArgumentException("没有待恢复记录");
-                if (Bukkit.getPlayer(corpse.pending().player()) != null) throw new IllegalArgumentException("请先让领取玩家离线");
-                boolean delivered;
-                if (args[2].equals("delivered")) delivered = true;
-                else if (args[2].equals("not-delivered")) delivered = false;
-                else throw new IllegalArgumentException("结果须为 delivered 或 not-delivered");
-                finish(corpse, delivered);
-                sender.sendMessage("已保存恢复结果: " + corpse.id);
-            } catch (Exception exception) {
-                sender.sendMessage("恢复失败: " + exception.getMessage());
-            }
-            return true;
-        }
-        sender.sendMessage("/td list | /td locate");
-        if (sender instanceof ConsoleCommandSender) sender.sendMessage("/td recover <ID> <delivered|not-delivered>（核对物品后使用）");
-        return true;
+    public List<Corpse> getAll() {
+        return List.copyOf(corpses.values());
     }
 
-    private String position(Corpse corpse) {
-        World world = Bukkit.getWorld(corpse.world);
-        return (world == null ? corpse.world.toString() : world.getName()) + " "
-                + (int) Math.floor(corpse.x) + " " + (int) Math.floor(corpse.y) + " " + (int) Math.floor(corpse.z);
-    }
-
-    @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (args.length == 1) return List.of("list", "locate").stream().filter(s -> s.startsWith(args[0].toLowerCase(Locale.ROOT))).toList();
-        return List.of();
+    /** Apply an operator's reviewed outcome while the recipient is offline. */
+    public void resolveClaim(UUID id, boolean delivered) throws Exception {
+        Corpse corpse = corpses.get(id);
+        if (corpse == null || corpse.pending() == null) throw new IllegalArgumentException("没有待恢复记录");
+        if (Bukkit.getPlayer(corpse.pending().player()) != null) throw new IllegalArgumentException("请先让领取玩家离线");
+        finish(corpse, delivered);
     }
 }

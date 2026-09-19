@@ -26,7 +26,7 @@ public final class CorpseStore {
             for (Path file : files.filter(p -> p.toString().endsWith(".yml")).sorted().toList()) {
                 YamlConfiguration yaml = new YamlConfiguration();
                 yaml.load(file.toFile()); // Do not silently turn a damaged file into an empty record.
-                if (yaml.getInt("schema") != 1) throw new IOException("Unsupported schema: " + file);
+                if (yaml.getInt("schema") < 1 || yaml.getInt("schema") > 2) throw new IOException("Unsupported schema: " + file);
                 UUID id = UUID.fromString(required(yaml, "id"));
                 if (!file.getFileName().toString().equals(id + ".yml")) throw new IOException("ID mismatch: " + file);
                 if (yaml.getBoolean("completed")) continue;
@@ -38,11 +38,14 @@ public final class CorpseStore {
                 if (!Double.isFinite(x) || !Double.isFinite(y) || !Double.isFinite(z)
                         || !Float.isFinite(yaw) || heldSlot < 0 || heldSlot > 8) throw new IOException("Invalid position/slot: " + file);
                 Corpse corpse = new Corpse(id, UUID.fromString(required(yaml, "owner")), required(yaml, "name"),
-                        UUID.fromString(required(yaml, "world")), x, y, z, yaw, heldSlot, profile, readItems(yaml, "items", Integer.MAX_VALUE));
+                        UUID.fromString(required(yaml, "world")), x, y, z, yaw, heldSlot, profile, Math.max(0, yaml.getLong("death-time", 0)), readItems(yaml, "items", Integer.MAX_VALUE));
                 if (yaml.contains("pending")) {
-                    corpse.begin(new Corpse.PendingClaim(UUID.fromString(required(yaml, "pending.player")),
-                            readItems(yaml, "pending.before", 35), readItems(yaml, "pending.after", 35),
-                            readItems(yaml, "pending.remaining", Integer.MAX_VALUE)));
+                    int inventorySize = yaml.getInt("pending.inventory-size", 36);
+                    corpse.begin(new Corpse.PendingClaim(UUID.fromString(required(yaml, "pending.player")), inventorySize,
+                            readItems(yaml, "pending.before", inventorySize - 1), readItems(yaml, "pending.after", inventorySize - 1),
+                            readItems(yaml, "pending.remaining", Integer.MAX_VALUE),
+                            yaml.contains("pending.drops") ? new ArrayList<>(readItems(yaml, "pending.drops", Integer.MAX_VALUE).values()) : List.of(),
+                            yaml.getBoolean("pending.drops-started", false)));
                 }
                 result.add(corpse);
             }
@@ -52,7 +55,7 @@ public final class CorpseStore {
 
     public void save(Corpse corpse) throws IOException {
         YamlConfiguration yaml = new YamlConfiguration();
-        yaml.set("schema", 1);
+        yaml.set("schema", 2);
         yaml.set("id", corpse.id.toString());
         // A durable empty marker prevents failed deletion from resurrecting old inventory.
         yaml.set("completed", corpse.empty() && corpse.pending() == null);
@@ -66,10 +69,14 @@ public final class CorpseStore {
             yaml.set("yaw", corpse.yaw);
             yaml.set("held-slot", corpse.heldSlot);
             yaml.set("profile", corpse.profile);
+            yaml.set("death-time", corpse.deathTime);
             writeItems(yaml, "items", corpse.items());
             Corpse.PendingClaim pending = corpse.pending();
             if (pending != null) {
                 yaml.set("pending.player", pending.player().toString());
+                yaml.set("pending.inventory-size", pending.inventorySize());
+                yaml.set("pending.drops-started", pending.dropsStarted());
+                writeItems(yaml, "pending.drops", CorpseItems.snapshot(pending.drops().toArray(ItemStack[]::new)));
                 writeItems(yaml, "pending.before", pending.before());
                 writeItems(yaml, "pending.after", pending.after());
                 writeItems(yaml, "pending.remaining", pending.remaining());

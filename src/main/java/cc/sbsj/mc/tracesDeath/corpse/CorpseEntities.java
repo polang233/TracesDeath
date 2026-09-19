@@ -140,10 +140,12 @@ public final class CorpseEntities implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void interact(PlayerInteractEntityEvent event) {
+        // Paper 26.1 shares this handler list with precise clicks. Let interactAt own them.
+        if (event instanceof PlayerInteractAtEntityEvent) return;
         UUID id = id(event.getRightClicked());
         if (id == null) return;
         event.setCancelled(true);
-        if (event.getHand() == EquipmentSlot.HAND && !(event instanceof PlayerInteractAtEntityEvent)) {
+        if (event.getHand() == EquipmentSlot.HAND) {
             open.accept(event.getPlayer(), id);
         }
     }

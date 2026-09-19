@@ -1,73 +1,52 @@
+<p align="center">
+  <img src="assets/logo-memorial-128.png" alt="TracesDeath 插件图标" width="128" height="128">
+</p>
+
 # TracesDeath
 
-Paper 1.21.9 起的玩家遗体插件。玩家死亡后，地面显示带玩家皮肤和装备的躺卧 Mannequin；右键打开遗体，按死亡时的槽位领取物品，取空后遗体消失。
+**玩家死亡后留下一具带皮肤与装备的遗体，右键取回物品，取空后自动消失。**
 
-## 使用
+基于 Mannequin 的 Paper 遗体插件，保留背包、快捷栏、护甲与副手的槽位布局，支持逐格领取和一键恢复。
 
-- GUI 顶部显示头盔、胸甲、护腿、靴子、副手；中间三行是背包，底下一行是快捷栏。
-- 左键或右键点击一格，将该格物品放入领取者背包。背包空间不足时只领取能装下的数量。
-- 物品取走后原槽位留空。装备外观随领取更新。领取装备不会自动替换领取者的穿戴装备。
-- 其他插件添加、无法对应原槽位的掉落保存在额外页。
-- 界面只取不存。Shift、数字键、双击、丢弃和拖拽操作均不转移物品。
-- 同一遗体同时只允许一人查看；每次领取都检查距离、世界、权限和待恢复状态。
-- 关闭界面和断线只释放查看锁。遗体不自动过期。
-- 尊重 `keepInventory` 和死亡事件实际掉落；经验仍由服务器处理。
+[![GitHub](https://img.shields.io/badge/GitHub-Source-181717?logo=github&logoColor=white)](https://github.com/polang233/TracesDeath)
+![Paper](https://img.shields.io/badge/Paper-1.21.9%2B-62b47a)
+![Java](https://img.shields.io/badge/Java-21%2B-e76f00)
 
-命令：
+[核心设计](docs/ARCHITECTURE.md) · [功能清单](docs/FEATURES.md) · [问题与建议](https://github.com/polang233/TracesDeath/issues)
 
-```text
-/td list       查看自己的遗体；管理员查看全部
-/td locate     查看自己遗体的位置
-```
+## 效果展示
 
-`tracesdeath.use` 默认授予所有玩家。`tracesdeath.admin` 默认授予 OP，允许查看全部记录并绕过所有者限制。
+<p align="center">
+  <img src="assets/screenshot-corpse.png" alt="带玩家皮肤和手持装备的躺卧遗体" width="900">
+</p>
 
-唯一配置项，修改后重启：
+## 核心功能
+
+- **玩家遗体**：显示死亡玩家的皮肤与装备，取走物品后同步更新外观。
+- **原槽位界面**：装备与物品分区展示，背包和快捷栏保留死亡时的位置。
+- **一键领取**：默认恢复到原槽位，也可配置为收入背包。
+- **遗体信息**：查看死亡者 ID、UUID、死亡时间、位置和剩余物品数量。
+- **重启恢复**：保存遗体记录，重启后重新显示；物品取空后自动清理遗体。
+
+## 开始使用
+
+将 JAR 放入 Paper 服务端的 `plugins` 目录，完整重启服务器。最低 API 版本为 1.21.9；Java 版本按对应 Paper 服务端的要求选择。
+
+右键遗体打开界面，点击物品逐格领取，或点击箱子按钮一键领取。`/td list` 查看遗体，`/td locate` 查看自己的遗体位置。
 
 ```yaml
+# 仅允许死者本人或管理员领取
 owner-only: false
+
+# false：恢复原槽位，原槽位已有的物品掉在脚下
+# true：收入背包，装不下的遗体物品掉在脚下
+claim-all-to-inventory: false
 ```
 
-## 实体与保存
+修改配置后重启生效。单格领取时，背包放不下的物品保留在遗体中。
 
-Mannequin 和 Interaction 都使用 `setPersistent(false)`。实体 UUID 不写入存档；遗体数据保存玩家皮肤、世界 UUID、位置、朝向和物品槽位。两个实体所在区块均已加载时才显示，卸载时释放，重启后从记录重建。实体被其他插件移除后，一个共享任务负责重新显示。
+---
 
-每具遗体保存在 `plugins/TracesDeath/corpses/<UUID>.yml`。每次变更同步写临时文件、刷新文件并原子替换；文件系统不支持原子替换时拒绝操作。首次写入失败保留原生死亡掉落。读取损坏或不支持的数据时停止启用，保留原文件。
+由 **Polang** 开发。欢迎通过 [Issues](https://github.com/polang233/TracesDeath/issues) 反馈问题或建议，请附上服务端版本、插件版本和相关日志。
 
-领取先保存待完成记录，包括玩家背包前后快照和遗体剩余物品，再转移物品、调用玩家保存、完成记录。中途失败时暂停领取，玩家重新登录后核对快照：
-
-- 背包与领取后相同：提交遗体剩余物品。
-- 背包与领取前相同：保留遗体原库存。
-- 两者均不相同：拒绝自动猜测，保留记录，由管理员核对。
-
-取空后原子写入完成标记，再移除外观。完成标记留在磁盘，避免删除文件失败导致库存重新出现。
-
-玩家存档与插件文件不是同一事务。这套恢复机制不能保证任意断电、磁盘故障、玩家存档回滚或其他插件干预下绝不丢失或复制。死亡事件接管与原版玩家存档之间同样存在崩溃窗口。部署前应进行备份，并对服务器使用的死亡、背包和物品插件做联合测试。
-
-需要人工恢复时，先核对 `pending`、玩家存档与日志，保持领取玩家离线，再由控制台明确记录结果：
-
-```text
-td recover <遗体UUID> delivered
-td recover <遗体UUID> not-delivered
-```
-
-`delivered` 扣除遗体中已发放的物品；`not-delivered` 恢复可领取状态。该命令不会修改玩家背包，不能用作未经核对的解锁命令。
-
-## 从旧版切换
-
-本版使用独立的 `corpses` 数据格式。若旧 `traces` 目录仍有 YAML 记录，插件拒绝启用，避免两套库存并存。先使用旧版领取完物品并清理遗体，停服备份，再移走旧记录并安装新版。旧配置可备份后删除以生成精简配置。
-
-## 构建与验证
-
-构建需要 Java 21。运行服务器使用对应 Paper 版本要求的 Java。
-
-```powershell
-./gradlew.bat test build
-./gradlew.bat runServer
-```
-
-`runServer` 使用 Paper 1.21.9 和独立 `run-core` 目录。构建产物为 `build/libs/TracesDeath-3.0-SNAPSHOT.jar`。
-
-单元测试覆盖槽位对应、实际掉落数量、附加掉落、部分空间、满背包、领取状态、写入失败与文件替换。可复跑的客户端回归脚本见 [scripts/README.md](scripts/README.md)。该脚本实际连接 Paper 并执行死亡、点击与领取，不替代真人客户端的皮肤和姿势视觉验收。
-
-更高版本需逐版本测试，不能仅凭最低 API 版本宣称全部兼容。
+如果这个插件对你有帮助，欢迎在 [GitHub](https://github.com/polang233/TracesDeath) 点个 Star。
