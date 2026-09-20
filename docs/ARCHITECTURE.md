@@ -1,10 +1,10 @@
 # TracesDeath 核心设计
 
-TracesDeath 的主流程是死亡掉落接管、遗体展示、界面领取和取空清理。本文记录当前实现边界及扩展方式，功能状态见 [功能清单](FEATURES.md)。
+TracesDeath 的主流程是死亡掉落接管、遗体展示、界面领取和取空清理。本文记录当前实现边界及扩展方式，功能状态见 [功能清单](FEATURES.md)，各类遗体的表现与保护边界见 [实体类型](ENTITY_TYPES.md)。
 
 ## 代码结构与职责
 
-以下路径相对于 `src/main/java/cc/sbsj/mc/tracesDeath/`：
+以下路径相对于 `src/main/java/cc/sbsj/mc/tracesdeath/`：
 
 - `TracesDeath`：读取配置、创建服务、注册根命令和处理插件停用。
 - `commands/TracesDeathCommand`：分发 `list`、`locate`、`recover`，处理参数、发送者权限、文本输出和补全。
@@ -12,22 +12,36 @@ TracesDeath 的主流程是死亡掉落接管、遗体展示、界面领取和�
 - `corpse/CorpseItems`：匹配死亡掉落与原始槽位，映射 GUI 槽位，计算领取结果及掉落清单。
 - `corpse/CorpseService`：管理活动记录，串行执行死亡接管、权限与距离检查、领取、恢复和终结。
 - `corpse/CorpseStore`：读取版本化 YAML、刷新临时文件并原子替换，保存失败向调用者报告。
-- `corpse/CorpseEntities`：创建和清理 Mannequin、Interaction，处理实体事件并修复缺失外观。
+- `corpse/CorpseEntities`：通过 `CorpseRenderer` 创建展示与点击实体，处理实体事件并修复缺失外观。
+- `appearance/CorpseAppearance`：校验遗体类型、界面材质开关与版本要求。
+- `config/PluginSettings`：解析领取权限与领取模式。
+- `config/TombstoneConfiguration`：仅在选择墓碑时创建并读取 `tombstone.yml`，保留已有设置。
+- `resourcepack/CustomTextureSettings`：读取墓碑模型编号、GUI 开关、界面字形和测试地址。
+- `resourcepack/GuiItemSettings`：解析按钮材质、名称、动态 Lore 和模型编号，仅应用于装饰物品。
+- `resourcepack/ResourcePackTestService`：导出内置材质 ZIP，响应手动测试请求并管理下载服务。
+- `commands/ResourcePackTestCommand`：校验权限、模块与目标玩家，调用测试服务。
+- `resourcepack/ResourcePackHttpServer`：按固定路径提供内置 ZIP，停用时释放端口与线程。
 - `corpse/CorpseMenu`：渲染库存副本，管理分页和单人查看锁，将领取交给服务。
 
 命令和界面都通过 `CorpseService` 改变库存。物品计算集中在 `CorpseItems`，文件读写集中在 `CorpseStore`，实体装备只用于展示。
 
+## 版本隔离
+
+同一 JAR 包含三组字节码：`src/main` 使用 Java 8 与 Spigot 1.12.2 API，`src/display` 使用 Java 17 与 Paper 1.19.4 API，`src/mannequin` 使用 Java 21 与 Paper 1.21.9 API。`ServerAdapterFactory` 检查版本和 Paper 能力后反射加载对应实现，旧服务器不会加载新版类。
+
+`ServerAdapter` 负责菜单、皮肤、地面定位及渲染器选择，`CorpseRenderer` 负责实体展示。显式选择不支持的类型时停止启用并报告原因；`auto` 选择可用的 Mannequin，否则选择箱子矿车。
+
 ## 数据模型
 
-每具遗体有独立 UUID，记录死者 UUID 与名称、世界 UUID、坐标、朝向、选中的快捷栏槽、玩家 Profile、死亡时间和物品槽位。
+每具遗体有独立 UUID，记录死者 UUID 与名称、世界 UUID、坐标、朝向、选中的快捷栏槽、可移植的皮肤属性、死亡时间和物品槽位。
 
 物品编号与 `PlayerInventory` 对齐：0–8 是快捷栏，9–35 是背包，36–39 是靴子、护腿、胸甲、头盔，40 是副手。41 起保存其他插件提供、无法匹配原槽位的额外掉落。主手直接引用选中的快捷栏槽。
 
 接管数量以死亡事件实际掉落为准，通过逐份扣减匹配原槽位。若多格物品完全相同而其他插件只保留其中一份，事件数据不足以辨认原格，当前按槽位顺序匹配并保持数量一致。
 
-`corpses/<UUID>.yml` 当前格式为 schema 2，兼容 schema 1。死亡时间缺失时显示“未记录”；旧的 36 格领取快照按原范围核对，新记录覆盖背包、护甲、副手共 41 格。记录不保存实体 UUID。
+`corpses/<UUID>.yml` 当前格式为 schema 3，兼容 schema 1、2。皮肤以 name/value/signature 属性列表保存，读取旧 Profile 时提取属性。物品仍使用对应服务端的 ItemStack 格式，高版本物品数据不能保证降级读取。死亡时间缺失时显示“未记录”；旧的 36 格领取快照按原范围核对，新记录覆盖背包、护甲、副手共 41 格。记录不保存实体 UUID。
 
-读取损坏数据或不支持的格式时停止启用，保留文件。旧 `traces` 目录仍有记录时也停止启用，需要先用对应旧版领取、清理并备份后切换。回退插件版本前恢复对应数据备份。
+读取损坏数据或不支持的格式时停止启用，保留文件。回退插件版本前恢复对应数据备份。
 
 ## 生命周期
 
@@ -38,13 +52,13 @@ TracesDeath 的主流程是死亡掉落接管、遗体展示、界面领取和�
 5. 取空先保存完成标记，再关闭界面、移除活动记录和外观。完成文件保留，避免删除失败复活库存。
 6. 区块卸载或插件停用时移除非持久化实体。区块加载、世界加载及共享修复任务依据活动记录重建外观。
 
-Mannequin 与 Interaction 都使用 `setPersistent(false)`。显示失败保留物品记录，实体加载不强制加载其他区块。Paper 26.1 的普通与精确实体交互共享监听链，普通处理器先跳过精确事件，交由精确处理器负责取消和打开界面。
+支持的 API 使用 `setPersistent(false)`。1.12 没有此接口，空矿车可能随世界保存；启动与区块加载时按稳定 scoreboard tag 清理残留展示，再依据记录重建。显示失败保留物品记录，实体加载不强制加载其他区块。Paper 26.1 的普通与精确实体交互共享监听链，普通处理器先跳过精确事件，交由精确处理器负责取消和打开界面。
 
 ## 领取与恢复
 
 `CorpseItems` 先计算目标库存，再由 `CorpseService` 保存 `PendingClaim`。记录包含领取者、库存范围、领取前后快照、遗体剩余物品、计划掉落物和 `drops-started`。
 
-单格领取按背包实际空间扣减。`claim-all-to-inventory: false` 时，一键领取恢复原槽位，将被替换的玩家物品列入掉落清单；开启后收入背包，将溢出的遗体物品列入清单。额外掉落在恢复原槽位后尝试收入背包。
+单格领取与 Shift 领取按背包实际空间扣减；玩家背包区域和操作按钮上的 Shift 不执行转移。装备占顶栏 0–4，5 为隔断，6 为领取，7 为信息，8 为翻页，9–17 为横向分隔。`loot.claim-all-mode: restore_slots` 时，一键领取恢复原槽位，将被替换的玩家物品列入掉落清单；`fill_inventory` 时收入背包，将溢出的遗体物品列入清单。额外掉落在恢复原槽位后尝试收入背包。
 
 保存领取计划成功后才修改玩家库存并调用玩家保存。若有地面掉落，先持久化 `drops-started` 再生成物品，最后提交遗体结果。界面关闭后同步最终玩家库存。
 
@@ -66,7 +80,7 @@ Mannequin 与 Interaction 都使用 `setPersistent(false)`。显示失败保留�
 
 界面布局扩展接入 `CorpseMenu`，物品格到来源格的关系集中维护在 `CorpseItems.sourceSlot` 与 `pages`。装饰和操作按钮不能占用真实物品的来源编号。新增筛选或多界面时，让页面保存查看状态、服务保存库存状态。
 
-当前配置由主类读取。配置增加到多个功能分组时，再引入独立的配置解析类，集中处理默认值、边界和兼容；业务方法接收校验后的配置。支持重载前需要定义打开的会话和待完成领取如何处理。
+`config.yml` 管理遗体类型与领取规则。选择墓碑后，`tombstone.yml` 管理模型、自定义 GUI 和测试地址；其他类型不访问该文件。入口校验后向服务传入解析结果。支持重载前需要定义打开的会话和待完成领取如何处理。
 
 ### 玩法规则与生命周期
 
@@ -74,7 +88,15 @@ Mannequin 与 Interaction 都使用 `setPersistent(false)`。显示失败保留�
 
 ### 展示与外观
 
-墓碑、资源包模型等展示沿用遗体记录。增加第二种展示实现时，再围绕“显示、更新、隐藏”提取展示接口；外观选择不改变库存保存和领取结算方式。每种展示明确区块加载、卸载及插件停用的清理责任。
+墓碑、资源包模型等展示沿用遗体记录。当前提供 Mannequin、ItemDisplay 墓碑和箱子矿车，由 `CorpseRenderer` 定义生成、位置、点击范围和更新；外观选择不改变库存保存和领取结算方式。每种展示明确区块加载、卸载及插件停用的清理责任。
+
+### 资源包模块
+
+构建把 GUI 背景、字体、墓碑模型与纹理打入同一资源包。按客户端资源格式提供常规版和 1.19.4 兼容版，内容均覆盖两项功能。GUI 与墓碑的开关及渲染逻辑分别管理，普通 Gradle 构建直接使用已检入素材。
+
+`TombstoneConfiguration` 根据所选类型决定是否读取专用文件，`CustomTextureSettings` 保存解析结果。墓碑模式可通过 `gui.enabled` 启用自定义 GUI。按钮始终为原版物品，墓碑通过 CustomModelData 指向模型。客户端资源决定最终显示，领取流程与材质状态无关。
+
+墓碑模式启用时导出资源包，默认开启 GUI 装饰。其他类型仅在执行测试命令时按需导出。`/td testpack` 在权限和目标玩家检查后调用测试服务，首次请求时启动内置下载端口，发送内置组合包的带 SHA-1 的资源包请求。服务不注册加入或加载状态监听；停用时关闭 HTTP 服务。资源包可自行安装或合并到服主的现有包。
 
 ### 存储与对外接口
 
@@ -90,6 +112,7 @@ Mannequin 与 Interaction 都使用 `setPersistent(false)`。显示失败保留�
 
 客户端回归脚本保留在 `scripts`：
 
+- `compat-smoke.cjs <java> <paper.jar> <plugin.jar> <协议版本> <外观类型> <新测试目录> <端口> <已接受的eula.txt>`：验证同一 JAR 的创建、Shift 领取、防存入、强制停服恢复与取空清理。已通过 Paper 1.12.2 箱子矿车、1.19.4 墓碑、1.21.9 Mannequin。
 - `smoke-corpse.cjs [exercise|seed|resume]`：连接 `127.0.0.1:25576` 的独立测试服，使用离线 OP 玩家 `CoreBot`，验证死亡、单格领取、取空清理和保留遗体后的重启。测试服需设置对应端口和 `spawn-protection=0`。
 - `restart-corpse.cjs <java> <paper.jar> <plugin.jar> <协议版本> <新测试目录> <已接受的eula.txt>`：自动创建测试服，强制结束自己启动的 Java 子进程，连续重启并比对库存、文件与掉落。默认端口 25577，可用 `RESTART_PORT` 调整。
 - 重启脚本默认验证原位恢复；`CLAIM_ALL_MODE=inventory` 验证背包收纳与溢出。`RESTART_RUNTIME_CACHE` 可复用隔离测试服的运行时文件。26.1.1、26.1.2 对应 Java 25 和 bot 协议 `26.1`。

@@ -1,0 +1,79 @@
+# 选择 config.yml 的 corpse.type: tombstone 后生成并读取。修改后重启生效。
+# 墓碑与 GUI 素材包含在同一内置资源包，玩家可自行安装。
+tombstone:
+  # 未加载资源包时显示此原版物品，加载后按模型编号显示墓碑。
+  material: STONE
+  custom-model-data: 7310000
+
+gui:
+  # 自定义遗体界面上半区；原版按钮和领取操作始终保留。
+  enabled: true
+  # 内置包在 minecraft:default 字体中定义这些字形，未加载时显示普通装饰字符。
+  title-prefix: '‹◆›'
+
+  # 只修改按钮与装饰物品，不修改玩家遗物或槽位。
+  # name 支持 & 颜色，{default} 保留原名称；lore 中 {details} 保留动态说明。
+  # custom-model-data: 0 使用原版图标；自定义编号需要自己的资源包提供对应模型。
+  items:
+    claim:
+      material: CHEST
+      name: '{default}'
+      lore: ['{details}']
+      custom-model-data: 0
+    info:
+      material: CLOCK
+      name: '{default}'
+      lore: ['{details}']
+      custom-model-data: 0
+    page:
+      material: ARROW
+      name: '{default}'
+      lore: ['{details}']
+      custom-model-data: 0
+    divider:
+      material: BLACK_STAINED_GLASS_PANE
+      name: '{default}'
+      lore: ['{details}']
+      custom-model-data: 0
+    separator:
+      material: BLACK_STAINED_GLASS_PANE
+      name: '{default}'
+      lore: ['{details}']
+      custom-model-data: 0
+    filler:
+      material: BLACK_STAINED_GLASS_PANE
+      name: '{default}'
+      lore: ['{details}']
+      custom-model-data: 0
+    empty-helmet:
+      material: GRAY_STAINED_GLASS_PANE
+      name: '{default}'
+      lore: ['{details}']
+      custom-model-data: 0
+    empty-chestplate:
+      material: GRAY_STAINED_GLASS_PANE
+      name: '{default}'
+      lore: ['{details}']
+      custom-model-data: 0
+    empty-leggings:
+      material: GRAY_STAINED_GLASS_PANE
+      name: '{default}'
+      lore: ['{details}']
+      custom-model-data: 0
+    empty-boots:
+      material: GRAY_STAINED_GLASS_PANE
+      name: '{default}'
+      lore: ['{details}']
+      custom-model-data: 0
+    empty-offhand:
+      material: GRAY_STAINED_GLASS_PANE
+      name: '{default}'
+      lore: ['{details}']
+      custom-model-data: 0
+
+# 仅 /td testpack [玩家] 使用，执行命令时才启动下载服务。
+test-server:
+  bind-address: '0.0.0.0'
+  port: 8163
+  # 下载根地址；给远程玩家测试时填写其可访问的地址。
+  public-url: 'http://127.0.0.1:8163'

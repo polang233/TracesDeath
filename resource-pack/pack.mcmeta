@@ -1,0 +1,12 @@
+{
+  "pack": {
+    "description": "TracesDeath · 墓碑与原版风格遗体界面",
+    "pack_format": 15,
+    "supported_formats": {
+      "min_inclusive": 15,
+      "max_inclusive": 88
+    },
+    "min_format": 15,
+    "max_format": 88
+  }
+}

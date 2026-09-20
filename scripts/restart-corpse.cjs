@@ -22,7 +22,7 @@ if (process.env.RESTART_RUNTIME_CACHE) for (const name of ['cache','libraries','
 fs.copyFileSync(eulaArg, path.join(directory, 'eula.txt'));
 const claimToInventory = process.env.CLAIM_ALL_MODE === 'inventory';
 fs.mkdirSync(path.join(directory,'plugins/TracesDeath'),{recursive:true});
-fs.writeFileSync(path.join(directory,'plugins/TracesDeath/config.yml'),'claim-all-to-inventory: '+claimToInventory+'\n');
+fs.writeFileSync(path.join(directory,'plugins/TracesDeath/config.yml'),'loot:\n  claim-all-mode: '+(claimToInventory?'fill_inventory':'restore_slots')+'\n');
 fs.writeFileSync(path.join(directory, 'server.properties'), [
  'server-ip=127.0.0.1','server-port='+port,'online-mode=false','level-name=regression',
  'level-type=minecraft:flat','generator-settings={"layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:stone","height":2},{"block":"minecraft:grass_block","height":1}],"biome":"minecraft:plains"}',
@@ -66,7 +66,7 @@ async function open() {
  console.log('INTERACT', bot.entity.position, target.position, target.id);
  if (version.startsWith('26.')) bot._client.write('use_entity',{target:target.id,hand:'main_hand',location:{x:0,y:0.3,z:0},sneaking:false});
  else await bot.activateEntity(target);
- await until(()=>bot.currentWindow?.slots[6]?.name==='clock','open GUI contents');
+ await until(()=>bot.currentWindow?.slots[7]?.name==='clock','open GUI contents');
 }
 function snapshot(label) {
  const data={label,position:bot.entity.position,inventory:playerItems().map(i=>({slot:i.slot,name:i.name,count:i.count})),
@@ -92,14 +92,14 @@ function totals(items) {
  return Object.fromEntries(Object.entries(result).sort());
 }
 async function checkMenuAndClaimAll() {
- assert.equal(bot.currentWindow.slots[5]?.name,'chest');
- assert.equal(bot.currentWindow.slots[6]?.name,'clock');
+ assert.equal(bot.currentWindow.slots[6]?.name,'chest');
+ assert.equal(bot.currentWindow.slots[7]?.name,'clock');
  for(let i=9;i<18;i++) assert.equal(bot.currentWindow.slots[i]?.name,'black_stained_glass_pane');
  assert.equal(bot.currentWindow.slots[53]?.name,'stone','last hotbar slot');
  const records=fs.readdirSync(path.join(directory,'plugins/TracesDeath/corpses')).filter(n=>n.endsWith('.yml'));
  const record=fs.readFileSync(path.join(directory,'plugins/TracesDeath/corpses',records[0]),'utf8');
  assert.match(record,/death-time: [1-9][0-9]+/);
- await bot.clickWindow(6,0,0);await sleep(200);
+ await bot.clickWindow(7,0,0);await sleep(200);
  assert(messages.some(m=>m.includes('死亡者 ID：CrashBot')));
  assert(messages.some(m=>m.includes('死亡时间：')&&!m.includes('未记录')));
  bot.closeWindow(bot.currentWindow);await sleep(150);
@@ -112,7 +112,7 @@ async function checkMenuAndClaimAll() {
  await open();
  const source=bot.currentWindow.slots.slice(0,54).filter((i,slot)=>i&&(slot<5||slot>=18)&&i.name!=='gray_stained_glass_pane');
  const expected=totals([...playerItems(),...source]);
- await bot.clickWindow(5,0,0);
+ await bot.clickWindow(6,0,0);
  await until(()=>!bot.currentWindow,'claim-all closes GUI');
  await sleep(120);
  const dropped=all('item').map(e=>e.getDroppedItem()).filter(Boolean);

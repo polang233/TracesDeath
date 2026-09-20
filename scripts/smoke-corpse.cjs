@@ -21,7 +21,7 @@ const entities = name => Object.values(bot.entities).filter(entity => entity.nam
 async function open() {
   await until(() => entities('interaction').length === 1, 'one interaction entity');
   bot.activateEntity(entities('interaction')[0]);
-  await until(() => bot.currentWindow?.slots[6]?.name === 'clock', 'corpse GUI contents');
+  await until(() => bot.currentWindow?.slots[7]?.name === 'clock', 'corpse GUI contents');
 }
 async function close() { if (bot.currentWindow) bot.closeWindow(bot.currentWindow); await sleep(300); }
 async function click(slot) { await bot.clickWindow(slot, 0, 0); await sleep(400); }

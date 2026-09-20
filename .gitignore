@@ -25,3 +25,6 @@ tools/
 
 run-core/
 scripts/node_modules/
+
+# Local visual exploration and inspection images
+resource-pack/previews/

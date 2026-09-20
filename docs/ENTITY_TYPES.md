@@ -1,0 +1,120 @@
+# 遗体实体类型
+
+外观由 `corpse.type` 选择；记录、权限、领取和取空清理共用同一套服务。结构见[核心设计](ARCHITECTURE.md)，进度见[功能清单](FEATURES.md)。
+
+## 配置与版本
+
+```yaml
+corpse:
+  type: auto
+```
+
+- `auto`：支持 Mannequin 的 Paper 使用玩家模型，其余使用箱子矿车。
+- `mannequin`：Paper 1.21.9+，显示死者皮肤、躺卧姿势与装备。
+- `tombstone`：Paper 1.19.4+，需要客户端加载资源包。
+- `chest_minecart`：Bukkit/Spigot/Paper 1.12+，使用矿车本体交互。
+
+同一 JAR 包含各版本实现。Java 版本遵循服务端要求；显式选择不支持的类型时，插件停止启用并输出原因。切换外观后完整重启，已有遗体也会使用所选类型。
+
+## Mannequin 玩家模型
+
+由 Mannequin 展示模型、Interaction 提供宽 1.8、高 0.8 的点击范围。相对默认实体，插件设置了：
+
+- 保存并还原玩家皮肤，显示全部皮肤层，隐藏默认 NPC 描述。
+- 固定 `SLEEPING` 姿势，朝向对齐直角并调整模型位置。
+- 关闭 AI、重力与碰撞，启用不可移动和无物理效果；脚下方块消失时保持原位。
+- 设置无敌并取消伤害事件；装备为视觉副本，异常死亡和移除时清空装备掉落。
+- 右键打开遗体界面，领取后同步装备外观。
+
+实现位于 `src/mannequin` 中的 `MannequinRenderer`。
+
+## 资源包墓碑
+
+由 ItemDisplay 展示 `tracesdeath:tombstone` 模型，Interaction 提供宽 1、高 1.5 的点击范围。模型包含石座、苔藓石碑与双面石饰，约 1.44 格高。
+
+展示实体关闭重力、设为无敌，不具备原生库存。真实物品保存在遗体记录中。实现位于 `src/display` 中的 `PaperServerAdapter`。
+
+## 兼容性箱子矿车
+
+使用空的 StorageMinecart 展示，右键打开遗体界面。与默认矿车相比：
+
+- 关闭重力、限制速度并清零速度修正；载具更新时清零速度，发生位移则拉回记录位置。
+- 取消载具伤害、销毁与乘坐事件。
+- 禁止打开原生容器与漏斗转移，原生库存保持为空。
+- 直接使用矿车本体接收交互，适用于没有 Interaction 的版本。
+
+实现位于 `BukkitServerAdapter.MinecartRenderer`，事件保护集中在 `CorpseEntities`。
+
+## 保护与生命周期
+
+所有类型均取消正常伤害和传送门事件。物品不存放在实体原生库存中，因此火焰、水流和漏斗不会改变遗体记录里的库存。领取后掉在地上的物品遵循原版掉落物规则。
+
+现代版本使用 `setPersistent(false)`，区块卸载或插件停用时移除展示，加载后按记录重建。1.12 缺少此接口，空矿车可能随世界保存；插件通过 scoreboard tag 在启动和区块加载时清理残留，再生成当前展示。取空后保存完成标记并移除实体。
+
+防伤害与火焰显示是两件事：当前没有单独取消点燃事件。水流、气泡柱和活塞组合仍需专项验证。矿车有位置回正；其他类型依赖自身静止配置。其他插件直接传送、修改或删除实体仍可能生效，缺失外观由共享任务修复。
+
+箱子船尚未接入。若后续增加，除伤害和容器保护外，还需明确固定或漂浮模式，并同步位置、定位和重启恢复规则。
+
+## 资源包与界面
+
+在 `config.yml` 中选择 `corpse.type: tombstone` 并重启，插件会首次生成 `tombstone.yml`：
+
+```yaml
+tombstone:
+  material: STONE
+  custom-model-data: 7310000
+gui:
+  enabled: true
+  title-prefix: '‹◆›'
+```
+
+墓碑模式直接使用文件中的模型配置，`gui.enabled` 控制该模式的自定义界面。其他类型使用原版界面，不生成或读取 `tombstone.yml`；切换类型会保留已有文件，再次启用墓碑时继续使用其中的设置。
+
+玩家的显示由本地资源包决定。墓碑未装包时显示承载物品，装包后显示自定义模型；GUI 始终保留箱子、时钟、玻璃板等原版按钮与领取功能，装包后显示上半区背景。插件不依赖客户端加载状态进行切换。
+
+### 安装与合并
+
+启用墓碑模式后，在 `plugins/TracesDeath/resource-packs/` 导出带插件版本号的组合包与 SHA-1。`tracesdeath.zip` 供 1.20+ 使用，`tracesdeath-1.19.4.zip` 供 1.19.4 使用，两者都包含 GUI 与墓碑素材。
+
+Release 同时提供插件 JAR 与资源包 ZIP。玩家把对应版本 ZIP 放到客户端 `.minecraft/resourcepacks/`，在游戏“选项 → 资源包”中启用，使用默认墓碑配置即可显示模型与 GUI。服主也可合并到已有资源包。合并 GUI 时保留 `assets/minecraft/font/default.json` 的三个字形定义；合并墓碑时保留 `assets/tracesdeath` 中的墓碑素材及石头的模型分派，和已有分派规则一起合并。资源包格式以目标客户端为准。
+
+### 自定义引用
+
+`tombstone.material` 是承载物品，`tombstone.custom-model-data` 是模型编号，默认 `STONE` / `7310000`。配置和 ZIP 中分派的物品、编号需要一致；修改配置不会改写材质文件。服务器只设置 CustomModelData，客户端加载资源后解释对应模型。
+
+`gui.title-prefix` 默认使用 `‹◆›`：内置包分别赋予左移、面板、回移效果，字体为 `minecraft:default`。未加载时它们是普通标题装饰字符。替换自己的背景时同步维护图片尺寸、字形和间距；该字体映射也会影响其他文本里的相同字形。
+
+界面仍为 54 格容器，顶部为五个装备槽、隔断、领取、信息和翻页。背景图片不会改变点击位置，下方玩家背包保持原版。
+
+### GUI 物品配置
+
+`tombstone.yml` 的 `gui.items` 可分别设置 `claim`、`info`、`page`、`divider`、`separator`、`filler` 和五种 `empty-*` 装备占位物品。默认使用原版图标，配置只作用于按钮和装饰，不改变遗物与操作槽位。
+
+```yaml
+gui:
+  items:
+    claim:
+      material: CHEST
+      name: '&a一键领取'
+      lore: ['{details}', '&7点击领取']
+      custom-model-data: 0
+```
+
+`{default}` 保留原名称，翻页按钮会保留当前页数；Lore 中单独一行 `{details}` 展开原有动态说明，信息按钮会保留死亡者、时间与位置。设为空列表可隐藏说明。名称与 Lore 支持 `&` 颜色代码。CustomModelData 为 0 时保留原版图标，自定义编号需与自行修改的资源包模型对应。
+
+### 手动测试命令
+
+管理员执行 `/td testpack [玩家]`。省略玩家时发给自己，控制台需要指定在线玩家，权限为 `tracesdeath.admin`。
+
+以下设置也位于 `tombstone.yml`：
+
+```yaml
+test-server:
+  bind-address: '0.0.0.0'
+  port: 8163
+  public-url: 'http://127.0.0.1:8163'
+```
+
+仅执行测试命令时启动下载服务，停止插件时关闭。`public-url` 是下载根地址，命令自动追加 ZIP 文件名；给远程玩家测试时填写其能访问的域名或 IP，并放行对应端口。测试包按服务端版本选择，跨版本客户端可自行安装对应 ZIP。
+
+配置校验、组合包内容和测试命令通过针对性单元测试及构建验证。遗体核心回归覆盖 Paper 1.12.2、1.19.4、1.21.9。

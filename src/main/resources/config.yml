@@ -1,8 +1,14 @@
-# true：仅死者本人或 tracesdeath.admin 可以领取。
-# 修改后重启服务器。
-owner-only: false
+# 修改后完整重启服务器生效。
+corpse:
+  # auto：支持时使用 Mannequin，其余使用箱子矿车。
+  # mannequin：Paper 1.21.9+；tombstone：Paper 1.19.4+，需要客户端资源包。
+  # chest_minecart：Bukkit/Spigot/Paper 1.12+。
+  # 选择 tombstone 后生成 tombstone.yml，可设置墓碑模型和 GUI 材质。
+  type: auto
 
-# 一键领取模式：
-# false：恢复到死亡时的原槽位，原槽位已有物品掉落在玩家脚下。
-# true：收入背包，装不下的遗体物品掉落在玩家脚下。
-claim-all-to-inventory: false
+loot:
+  # 仅允许死者本人或管理员领取。
+  owner-only: false
+  # restore_slots：恢复死亡时原槽位，冲突物品掉在脚下。
+  # fill_inventory：顺序收入背包，放不下的遗体物品掉在脚下。
+  claim-all-mode: restore_slots
