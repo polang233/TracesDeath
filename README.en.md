@@ -59,7 +59,7 @@ The optional pack requires a 1.20+ client. Place the ZIP in `.minecraft/resource
 
 Set `language: en_US` in `config.yml` for English. Edit `languages/en_US.yml` to change messages, then run `/td reload`. Chinese (`zh_CN`) is the default.
 
-Set `experience.keep-percent` from 0 to 100; the default is 50. Zero leaves experience to the server's existing death rules. Click **Collect all** to take items and experience, or hover over it and press **Q** to take only experience. Taking the final item also awards any experience left in the corpse.
+Set `death.keep-percent` from 0 to 100; the default is 50. Zero leaves experience to the server's existing death rules. Click **Collect all** to take items and experience, or hover over it and press **Q** to take only experience. Taking the final item also awards any experience left in the corpse.
 
 Use `death.exclude-items.name-contains` and `lore-contains` to exclude bound items. Matching ignores color codes and letter case. Excluded items are left to normal death drops or the binding plugin; TracesDeath does not return them to the player.
 

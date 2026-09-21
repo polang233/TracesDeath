@@ -57,7 +57,7 @@
 
 资源包适用于 1.20+ 客户端：将 ZIP 放入 `.minecraft/resourcepacks/`，在游戏设置中启用即可。玩家可自由选择是否安装。
 
-`config.yml` 中用 `language: zh_CN` 或 `en_US` 切换语言，`experience.keep-percent` 设置经验保留百分比。领取按钮点击取回全部物品与经验，鼠标指向按钮按 Q 只取经验；取走最后一件物品的人也会获得剩余经验。
+`config.yml` 中用 `language: zh_CN` 或 `en_US` 切换语言，`death.keep-percent` 设置经验保留百分比。领取按钮点击取回全部物品与经验，鼠标指向按钮按 Q 只取经验；取走最后一件物品的人也会获得剩余经验。
 
 常用命令：`/td list` 查看遗体，`/td locate` 查看位置，管理员用 `/td reload` 重载配置、`/td testpack [玩家]` 手动测试资源包。替换插件 JAR 后需要重启。
 

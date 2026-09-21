@@ -111,7 +111,7 @@ class DeathHandlingTest {
 
         Fixture(int percent) throws Exception {
             var config = new YamlConfiguration();
-            config.set("experience.keep-percent", percent);
+            config.set("death.keep-percent", percent);
             config.set("death.exclude-items.lore-contains", List.of("Soulbound"));
             var inventory = mock(PlayerInventory.class);
             var world = mock(World.class);

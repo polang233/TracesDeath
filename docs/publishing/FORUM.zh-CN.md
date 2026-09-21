@@ -2,7 +2,7 @@
 
 ![TracesDeath](https://raw.githubusercontent.com/polang233/TracesDeath/main/assets/logo-memorial-128.png)
 
-**轻量 Minecraft 遗体插件：死亡留下遗体，右键取回物品与经验，取空后自动消失。**
+**轻量 Minecraft 遗体插件：死亡留下遗体，打开可取回物品与经验，取空后自动消失。**
 
 无需资源包即可显示玩家尸体或带死者头颅的组合墓碑。安装可选资源包后，墓碑换上暖色砂岩纹理，GUI 增加苔石边框与装饰。
 
@@ -43,7 +43,7 @@
 
 资源包供 1.20+ 客户端使用：将 `TracesDeath.zip` 放入 `.minecraft/resourcepacks/`，在游戏设置中启用即可。插件不自动下发，也不要求玩家安装。
 
-`language: zh_CN` / `en_US` 切换语言，`experience.keep-percent` 设置经验保留百分比。拾取按钮点击领取物品与经验，Q 只取经验，最后一件物品的领取者获得剩余经验。
+`language: zh_CN` / `en_US` 切换语言，`death.keep-percent` 设置经验保留百分比。拾取按钮点击领取物品与经验，Q 只取经验，最后一件物品的领取者获得剩余经验。
 
 常用命令：`/td list` 查看遗体，`/td locate` 查看位置；管理员用 `/td reload` 重载配置、`/td testpack [玩家]` 手动测试资源包。
 
@@ -53,8 +53,8 @@
 
 QQ 群：**620224543** · [Issues 问题反馈](https://github.com/polang233/TracesDeath/issues)
 
-作者：**Polang**。项目使用 [GNU GPLv3](https://github.com/polang233/TracesDeath/blob/main/LICENSE) 开源，欢迎反馈问题和贡献代码。觉得好用的话，欢迎点个 [⭐ Star](https://github.com/polang233/TracesDeath)！
+作者：**Polang**。项目使用 [GNU GPLv3](https://github.com/polang233/TracesDeath/blob/main/LICENSE) 开源，欢迎反馈问题和贡献代码。
 
-默认启用 bStats 基础统计，遵循服务端全局设置。
+觉得好用的话，欢迎点个 [⭐ Star](https://github.com/polang233/TracesDeath)！
 
 [![TracesDeath 使用统计](https://bstats.org/signatures/bukkit/TracesDeath.svg)](https://bstats.org/plugin/bukkit/TracesDeath/34148)

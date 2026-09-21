@@ -137,7 +137,6 @@ death:
   exclude-items:
     name-contains: []
     lore-contains: ['灵魂绑定', 'Soulbound']
-experience:
   keep-percent: 50
 ```
 

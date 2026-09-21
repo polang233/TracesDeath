@@ -17,15 +17,13 @@ loot:
   claim-all-mode: restore_slots
 
 death:
-  # 保留背包时跳过遗体。关闭后仅能收集确实失去的经验，背包物品始终不会复制。
+  # 若死亡时游戏状态或世界规则为死亡不掉落，则不生成遗体或墓碑，防止复制。
   skip-keep-inventory: true
   # 忽略颜色、不区分大小写，包含任一文字就不收入遗体。
   # 命中物品仍由死亡掉落或其他插件处理；本插件不会自动返还它们。
   exclude-items:
     name-contains: []
     lore-contains: [] # 例如 ['灵魂绑定', 'Soulbound']
-
-experience:
   # 保存当前等级与进度条换算出的经验点，向下取整。0 不接管经验，100 全部保存。
   # 已保留经验、设置重生经验或修改原版经验掉落的其他插件优先。
   keep-percent: 50

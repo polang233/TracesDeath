@@ -17,12 +17,12 @@ public final class DeathSettings {
 
     public DeathSettings(ConfigurationSection config) {
         skipKeepInventory = config.getBoolean("death.skip-keep-inventory", true);
-        if (config.contains("experience.keep-percent") && !config.isInt("experience.keep-percent"))
+        if (config.contains("death.keep-percent") && !config.isInt("death.keep-percent"))
             throw new IllegalArgumentException(
-                    "experience.keep-percent must be an integer from 0 to 100");
-        experiencePercent = config.getInt("experience.keep-percent", 50);
+                    "death.keep-percent must be an integer from 0 to 100");
+        experiencePercent = config.getInt("death.keep-percent", 50);
         if (experiencePercent < 0 || experiencePercent > 100)
-            throw new IllegalArgumentException("experience.keep-percent must be between 0 and 100");
+            throw new IllegalArgumentException("death.keep-percent must be between 0 and 100");
         names = terms(config.getStringList("death.exclude-items.name-contains"));
         lore = terms(config.getStringList("death.exclude-items.lore-contains"));
     }

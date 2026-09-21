@@ -54,13 +54,12 @@ Player corpses and stone tombstones work without a resource pack. The optional p
 
 Set language: en_US in config.yml for English (default: zh_CN). Messages are editable in languages/en_US.yml. The pack is optional and is only sent through the test command.
 
-Set experience.keep-percent from 0 to 100; 0 leaves death experience to the server. Collect all takes both items and experience, while taking the last item also awards any remaining experience. Name/lore exclusions leave items to normal drops or the binding plugin; they do not return items automatically.
+Set death.keep-percent from 0 to 100; 0 leaves death experience to the server. Collect all takes both items and experience, while taking the last item also awards any remaining experience. Name/lore exclusions leave items to normal drops or the binding plugin; they do not return items automatically.
 
 [URL=https://github.com/polang233/TracesDeath/blob/main/README.en.md]English guide[/URL] · [URL=https://github.com/polang233/TracesDeath/issues]Report a bug[/URL]
 QQ group: 620224543 (Chinese)
 
 [B]Author:[/B] Polang · [B]License:[/B] [URL=https://github.com/polang233/TracesDeath/blob/main/LICENSE]GNU GPLv3[/URL]
-Basic bStats metrics are enabled by default and respect the server's global bStats setting.
 
 [URL=https://bstats.org/plugin/bukkit/TracesDeath/34148][IMG]https://bstats.org/signatures/bukkit/TracesDeath.svg[/IMG][/URL]
 
