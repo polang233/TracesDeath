@@ -13,6 +13,7 @@
 ![推荐版本](https://img.shields.io/badge/推荐-1.20%2B-f4a940)
 [![Downloads](https://img.shields.io/github/downloads/polang233/TracesDeath/total?label=Downloads&color=2196f3)](https://github.com/polang233/TracesDeath/releases)
 ![Java](https://img.shields.io/badge/Java-8%2B-e76f00)
+[![License](https://img.shields.io/github/license/polang233/TracesDeath?color=blue)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/polang233/TracesDeath?style=flat&label=Stars)](https://github.com/polang233/TracesDeath/stargazers)
 
 [核心设计](docs/ARCHITECTURE.md) · [功能清单](docs/FEATURES.md) · [实体与材质配置](docs/ENTITY_TYPES.md)
@@ -66,9 +67,11 @@ Release 提供插件 JAR 与可选资源包 `TracesDeath.zip`。
 
 ## 支持与反馈
 
-由 **Polang** 开发。[提交问题或建议](https://github.com/polang233/TracesDeath/issues) 时，请附上服务端版本、插件版本及相关日志。
+由 **Polang** 开发，采用 [GNU GPLv3](LICENSE) 开源。第三方组件声明见 [Third-party notices](THIRD_PARTY_NOTICES.md)。[提交问题或建议](https://github.com/polang233/TracesDeath/issues) 时，请附上服务端版本、插件版本及相关日志。
 
 **如果觉得好用，欢迎点个 ⭐ Star 支持一下！**
+
+[SpigotMC 英文介绍（BBCode）](docs/publishing/SPIGOT.en.bbcode.txt) · [论坛介绍（Markdown）](docs/publishing/FORUM.zh-CN.md)
 
 ## 使用统计
 

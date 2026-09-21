@@ -1,0 +1,63 @@
+[CENTER][IMG]https://raw.githubusercontent.com/polang233/TracesDeath/main/assets/logo-memorial-128.png[/IMG]
+[SIZE=7][B]TracesDeath[/B][/SIZE]
+Corpses and tombstones with inventory recovery. A resource pack is optional.
+
+[URL=https://github.com/polang233/TracesDeath/releases/latest]Download[/URL] · [URL=https://github.com/polang233/TracesDeath]Source[/URL] · [URL=https://github.com/polang233/TracesDeath/issues]Support[/URL][/CENTER]
+
+[B]Keep your items in a corpse[/B]
+
+When a player dies, TracesDeath stores their dropped items in a corpse. Right-click to recover them. The corpse disappears when empty.
+
+Player corpses and stone tombstones work without a resource pack. The optional pack adds warm sandstone tombstone textures and a decorated inventory menu.
+
+[IMG]https://raw.githubusercontent.com/polang233/TracesDeath/main/assets/screenshot-corpse.png[/IMG]
+
+[B]Features[/B]
+[LIST]
+[*]Player models, stone tombstones with the owner's head, and chest minecarts.
+[*]Separate armor, offhand and main-hand slots. The main-hand item appears only once.
+[*]Click, Shift-click or collect all. Choose original-slot restoration or inventory filling; displaced or overflowing items drop at your feet.
+[*]Death information, saved corpse records and restoration after server restarts.
+[*]Optional owner-only access and configurable tombstone GUI buttons.
+[*]Admin configuration reload and a manual resource-pack test command.
+[/LIST]
+
+[B]Without a resource pack[/B]
+[IMG]https://raw.githubusercontent.com/polang233/TracesDeath/main/assets/screenshots/tombstone-vanilla.png[/IMG]
+[IMG]https://raw.githubusercontent.com/polang233/TracesDeath/main/assets/screenshots/gui-vanilla.png[/IMG]
+
+[B]With the optional resource pack[/B]
+[IMG]https://raw.githubusercontent.com/polang233/TracesDeath/main/assets/screenshots/tombstone-resourcepack.png[/IMG]
+[IMG]https://raw.githubusercontent.com/polang233/TracesDeath/main/assets/screenshots/gui-resourcepack.png[/IMG]
+
+[B]Compatibility[/B]
+[LIST]
+[*]Chest minecart: Bukkit, Spigot or Paper 1.12+.
+[*]Tombstone: Paper 1.19.4+.
+[*]Player model (Mannequin): Paper 1.21.9+.
+[*]The optional resource pack requires a 1.20+ client. Minecraft 1.20+ is recommended; the Java requirement follows your server version.
+[/LIST]
+
+[B]Get started[/B]
+[LIST=1]
+[*]Put the plugin JAR in plugins and restart the server.
+[*]Choose auto, mannequin, tombstone or chest_minecart under corpse.type in config.yml.
+[*]For tombstones, run /td reload to generate tombstone.yml and export the bundled pack. Players can install TracesDeath.zip in their client's resourcepacks folder and enable it in game.
+[/LIST]
+
+[B]Commands[/B]
+/td list — List corpses you can query.
+/td locate — Show your corpse locations.
+/td reload — Reload configuration; requires tracesdeath.admin.
+/td testpack [player] — Manually send the bundled pack for testing; requires tracesdeath.admin.
+
+Current in-game messages are in Chinese. Tombstone GUI button names and lore are configurable. The plugin does not automatically send the pack or require players to install it.
+
+[URL=https://github.com/polang233/TracesDeath/blob/main/docs/ENTITY_TYPES.md]Configuration and resource-pack guide[/URL]
+
+[B]Author:[/B] Polang · [B]License:[/B] [URL=https://github.com/polang233/TracesDeath/blob/main/LICENSE]GNU GPLv3[/URL]
+Basic bStats metrics are enabled by default and respect the server's global bStats setting.
+
+[URL=https://bstats.org/plugin/bukkit/TracesDeath/34148][IMG]https://bstats.org/signatures/bukkit/TracesDeath.svg[/IMG][/URL]
+
+Enjoy the plugin? A [URL=https://github.com/polang233/TracesDeath]GitHub Star[/URL] helps support the project.

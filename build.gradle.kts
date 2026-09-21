@@ -47,6 +47,8 @@ tasks {
     named<JavaCompile>(display.compileJavaTaskName) { options.release.set(17) }
     named<JavaCompile>(mannequin.compileJavaTaskName) { options.release.set(21) }
     jar {
+        from("LICENSE") { into("META-INF/licenses"); rename { "TracesDeath-GPL-3.0.txt" } }
+        from("THIRD_PARTY_NOTICES.md") { into("META-INF") }
         from(display.output)
         from(mannequin.output)
     }
