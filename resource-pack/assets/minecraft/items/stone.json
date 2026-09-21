@@ -1,0 +1,41 @@
+{
+  "model": {
+    "type": "minecraft:range_dispatch",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "entries": [
+      {
+        "threshold": 7310000,
+        "model": {
+          "type": "minecraft:model",
+          "model": "tracesdeath:tombstone"
+        }
+      },
+      {
+        "threshold": 7310001,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/stone_tracesdeath_base"
+        }
+      },
+      {
+        "threshold": 7310002,
+        "model": {
+          "type": "minecraft:model",
+          "model": "tracesdeath:blank"
+        }
+      },
+      {
+        "threshold": 7310003,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/stone_tracesdeath_base"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/stone_tracesdeath_base"
+    }
+  }
+}

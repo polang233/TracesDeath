@@ -1,0 +1,17 @@
+{
+  "parent": "minecraft:block/mossy_stone_bricks",
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 7310002
+      },
+      "model": "tracesdeath:blank"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 7310003
+      },
+      "model": "minecraft:item/mossy_stone_bricks_tracesdeath_base"
+    }
+  ]
+}

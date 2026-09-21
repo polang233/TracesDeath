@@ -5,31 +5,57 @@ plugins {
 
 repositories {
     mavenCentral()
+    maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
     maven("https://repo.papermc.io/repository/maven-public/")
 }
 
+val display by sourceSets.creating {
+    compileClasspath += sourceSets.main.get().output
+}
+val mannequin by sourceSets.creating {
+    compileClasspath += sourceSets.main.get().output
+}
+
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:26.2.build.+")
-    testImplementation("io.papermc.paper:paper-api:26.2.build.111-stable")
+    compileOnly("org.spigotmc:spigot-api:1.12.2-R0.1-SNAPSHOT")
+    add(display.compileOnlyConfigurationName, "io.papermc.paper:paper-api:1.19.4-R0.1-SNAPSHOT")
+    add(mannequin.compileOnlyConfigurationName, "io.papermc.paper:paper-api:1.21.9-R0.1-SNAPSHOT")
+    testImplementation("io.papermc.paper:paper-api:1.21.9-R0.1-SNAPSHOT")
+    testImplementation("org.mockito:mockito-core:5.20.0")
     testImplementation("org.junit.jupiter:junit-jupiter:5.14.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.14.3")
 }
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(25)
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+}
+
+// GUI and tombstone assets share one resource pack for Minecraft 1.20+ clients.
+val bundledResourcePack by tasks.registering(Zip::class) {
+    archiveFileName.set("TracesDeath.zip")
+    destinationDirectory.set(layout.buildDirectory.dir("generated/resource-packs"))
+    from("resource-pack") { include("assets/**", "pack.png", "pack.mcmeta") }
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
 }
 
 tasks {
-    test {
-        useJUnitPlatform()
+    processResources {
+        from(bundledResourcePack) { into("resource-packs") }
     }
-
+    compileJava { options.release.set(8) }
+    named<JavaCompile>(display.compileJavaTaskName) { options.release.set(17) }
+    named<JavaCompile>(mannequin.compileJavaTaskName) { options.release.set(21) }
+    jar {
+        from("LICENSE") { into("META-INF/licenses"); rename { "TracesDeath-GPL-3.0.txt" } }
+        from("THIRD_PARTY_NOTICES.md") { into("META-INF") }
+        from(display.output)
+        from(mannequin.output)
+    }
+    test { useJUnitPlatform() }
     runServer {
-        // Configure the Minecraft version for our task.
-        // This is the only required configuration besides applying the plugin.
-        // Your plugin's jar (or shadowJar if present) will be used automatically.
-        minecraftVersion("26.2")
-        jvmArgs("-Xms2G", "-Xmx2G")
+        minecraftVersion("1.21.9")
+        runDirectory.set(file("run-core"))
+        jvmArgs("-Xms1G", "-Xmx2G", "-Dterminal.jline=false", "-Dterminal.ansi=false")
     }
-
 }

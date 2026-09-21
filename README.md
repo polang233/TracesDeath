@@ -1,158 +1,80 @@
+<p align="center">
+  <img src="assets/logo-memorial-128.png" alt="TracesDeath 插件图标" width="128" height="128">
+</p>
+
 # TracesDeath
 
-面向 Paper 26.2 的死亡墓碑插件，默认使用高版本 Mannequin 玩家模型 NPC 展示死亡玩家，而不是盔甲架。
+**轻量 Minecraft 遗体插件：死亡留下遗体，右键取回物品，取空后自动消失。**
 
-玩家死亡后，物品进入插件维护的唯一墓碑记录。世界中生成两个关联实体：
+无需资源包即可显示带皮肤与装备的玩家遗体，或带死者头颅的组合墓碑。安装可选资源包后，墓碑获得专用纹理，遗体 GUI 显示苔石边框与装饰。
 
-- Mannequin：显示玩家皮肤、死亡姿势和装备视觉副本。
-- Interaction：提供独立、可配置的点击区域，解决躺卧 NPC 难以命中的问题。
+[![Version](https://img.shields.io/github/v/release/polang233/TracesDeath?label=Version&color=2ea44f)](https://github.com/polang233/TracesDeath/releases/latest)
+![Minecraft](https://img.shields.io/badge/Minecraft-1.12%2B-62b47a)
+![推荐版本](https://img.shields.io/badge/推荐-1.20%2B-f4a940)
+[![Downloads](https://img.shields.io/github/downloads/polang233/TracesDeath/total?label=Downloads&color=2196f3)](https://github.com/polang233/TracesDeath/releases)
+![Java](https://img.shields.io/badge/Java-8%2B-e76f00)
+[![License](https://img.shields.io/github/license/polang233/TracesDeath?color=blue)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/polang233/TracesDeath?style=flat&label=Stars)](https://github.com/polang233/TracesDeath/stargazers)
 
-两个实体 UUID 都会持久化。墓碑清空、过期或被管理员移除时，两者会一起删除；区块重新加载时会清理孤儿实体或补齐缺失实体。
+[核心设计](docs/ARCHITECTURE.md) · [功能清单](docs/FEATURES.md) · [实体与材质配置](docs/ENTITY_TYPES.md)
 
-## 当前能力
+## 下载
 
-### Mannequin NPC
+[![GitHub Releases](https://img.shields.io/badge/GitHub-Releases-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/polang233/TracesDeath/releases/latest)
 
-- 使用死亡玩家 Profile 和全部皮肤层。
-- 固定睡眠姿势、无 AI、无重力、不可推动；朝向取整到直角并把生成点回撤半个身长，使尸体居中在方块内。
-- 显示护甲、主手和副手的视觉副本。
-- Mannequin 不是 Mob，掉落概率 API 不可用；视觉装备依赖无敌状态、死亡事件清空掉落和删除前清空装备来防掉落。
-- 同时支持点击 Mannequin 本体和 Interaction 代理。
-- 默认左右键都可交互；普通点击打开 GUI，潜行点击快速领取。
-- 名字只渲染一行：description 渲染层保持隐藏，避免与自定义名称重复。
+Release 提供插件 JAR 与可选资源包 `TracesDeath.zip`。
 
-### 物品领取
+## 效果展示
 
-- GUI 每页展示 45 个物品，支持翻页，不会因固定分类槽位而截断。
-- GUI 由服务端控制，只允许取出，禁止 Shift 点击、拖拽和变相存入。
-- 同一墓碑同一时间只允许一名玩家打开。
-- GUI 和快速领取共用同一套差额结算。
-- 背包只有部分空间时，以 Bukkit 返回的实际剩余数量更新墓碑。
-- 可自动装备空的护甲槽；冲突物品可留在墓碑或按配置掉落。
+**玩家遗体 · 无需资源包**
 
-### 数据和生命周期
+<p align="center">
+  <img src="assets/screenshot-corpse.png" alt="带玩家皮肤与装备的躺卧遗体" width="800">
+</p>
 
-- 墓碑物品只保存在 TraceData 中，NPC 装备不是第二份可领取库存。
-- 每个墓碑使用独立 YAML 文件，包含 schema version、世界 UUID、存储类型及实体 UUID。
-- 文件通过临时文件加原子替换写入。
-- 初次持久化失败时删除已经生成的 NPC 和点击代理，并保留原生死亡掉落。
-- 正常停服保存，重启后恢复活动索引并校验已加载的 NPC。
-- 定时过期；可选择掉落或销毁剩余物品。
-- keepInventory 始终按原版规则处理；当前版本不接管经验。
+**不加载资源包：组合墓碑与原版界面**
 
-### 存储类型
+<p align="center">
+  <img src="assets/screenshots/tombstone-vanilla.png" alt="原版苔石与玩家头颅组成的墓碑" width="440">
+  <img src="assets/screenshots/gui-vanilla.png" alt="不加载资源包时的遗体界面" width="440">
+</p>
 
-| 类型 | 状态 | 说明 |
-|---|---|---|
-| mannequin | 默认 | Mannequin 外观加 Interaction 点击代理 |
-| block | 兼容回退 | 空容器方块作为世界标记，物品仍使用虚拟记录 |
+**加载资源包：专用墓碑材质与 GUI 装饰**
 
-旧的 minecart、corpse、custom_entity 及盔甲架库存链路已经移除。
+<p align="center">
+  <img src="assets/screenshots/tombstone-resourcepack.png" alt="加载资源包后的墓碑实测" width="440">
+  <img src="assets/screenshots/gui-resourcepack.png" alt="加载资源包后的遗体界面实测" width="440">
+</p>
 
-## 交互
+## 核心功能
 
-Mannequin 默认配置为 BOTH：
+- 玩家模型、组合墓碑、兼容旧版本的箱子矿车三种外观。
+- 装备与主手独立展示，支持点击、Shift 和一键拾取，按配置恢复原槽位或收入背包。
+- 显示死亡者、死亡时间、死亡位置及剩余物品格数。
+- 保存遗体记录，支持重启恢复，取空后清理全部展示部件。
 
-- 普通左键或右键：打开只取不存 GUI。
-- 潜行左键或右键：快速领取全部可容纳物品。
-- 超过 7 方块：拒绝交互。
-- owner-only 开启时：仅所有者、tracesdeath.admin 或 tracesdeath.admin.bypass 可访问。
+## 开始使用
 
-## 命令
+推荐使用 **1.20+**。将 JAR 放入服务端 `plugins` 后重启。箱子矿车支持 Bukkit/Spigot/Paper 1.12+，墓碑要求 Paper 1.19.4+，玩家模型要求 Paper 1.21.9+；Java 版本遵循所用服务端要求。
 
-主命令 /tracesdeath，别名 /td、/deathtrace。
+在 `config.yml` 的 `corpse.type` 选择 `auto`、`mannequin`、`tombstone` 或 `chest_minecart`。`auto` 优先使用可用的玩家模型。选择墓碑并执行 `/td reload` 后，自动生成 `tombstone.yml`，同时导出组合资源包到 `plugins/TracesDeath/resource-packs/`。
 
-| 命令 | 说明 |
-|---|---|
-| /td reload | 重载配置和语言 |
-| /td types | 查看已注册存储类型 |
-| /td list [玩家名] | 列出活动墓碑 |
-| /td locate [ID] | 查看自己的墓碑位置 |
-| /td info ID | 查看墓碑详情 |
-| /td remove ID [drop] | 移除指定墓碑，可选掉落剩余物品 |
-| /td clear | 清除所有活动墓碑 |
-| /td debug create | 使用手持物品创建测试墓碑 |
-| /td debug synth 玩家名 [x y z] | 用离线玩家档案在世界坐标合成测试墓碑（控制台可用） |
+资源包适用于 1.20+ 客户端：将 ZIP 放入 `.minecraft/resourcepacks/`，在游戏设置中启用即可。玩家可自由选择是否安装。
 
-管理命令需要 tracesdeath.admin。
+常用命令：`/td list` 查看遗体，`/td locate` 查看位置，管理员用 `/td reload` 重载配置、`/td testpack [玩家]` 手动测试资源包。替换插件 JAR 后需要重启。
 
-## 权限
+---
 
-| 权限 | 默认 | 说明 |
-|---|---|---|
-| tracesdeath.use | true | 玩家死亡时启用墓碑功能 |
-| tracesdeath.admin | OP | 管理命令及所有者限制绕过 |
-| tracesdeath.admin.bypass | OP | 仅绕过所有者限制 |
+## 支持与反馈
 
-## 主要配置
+由 **Polang** 开发，采用 [GNU GPLv3](LICENSE) 开源。第三方组件声明见 [Third-party notices](THIRD_PARTY_NOTICES.md)。[提交问题或建议](https://github.com/polang233/TracesDeath/issues) 时，请附上服务端版本、插件版本及相关日志。
 
-~~~yaml
-enabled: true
+**如果觉得好用，欢迎点个 ⭐ Star 支持一下！**
 
-storage:
-  type: mannequin
+[SpigotMC 英文介绍（BBCode）](docs/publishing/SPIGOT.en.bbcode.txt) · [论坛介绍（Markdown）](docs/publishing/FORUM.zh-CN.md)
 
-death:
-  play-sound: true
-  show-particles: true
+## 使用统计
 
-expiration:
-  time-seconds: 600
-  cleanup-interval-seconds: 60
-  drop-on-expire: true
+默认启用 bStats 基础统计，遵循服务端 bStats 全局设置。
 
-protection:
-  owner-only: false
-
-interaction:
-  max-distance: 7.0
-
-types:
-  mannequin:
-    auto-remove-when-empty: true
-    lava-proof: true
-    hitbox:
-      width: 1.8
-      height: 1.2
-    interaction:
-      click-type: BOTH
-      mode: OPEN_GUI
-      auto-equip: true
-      conflict-handling: TRY_INVENTORY
-
-  block:
-    material: CHEST
-    auto-remove-when-empty: true
-    lava-proof: true
-    interaction:
-      click-type: RIGHT_CLICK
-      mode: OPEN_GUI
-      auto-equip: true
-      conflict-handling: TRY_INVENTORY
-~~~
-
-当 mode 为 OPEN_GUI 时，潜行点击仍会执行快速领取。conflict-handling 可选 TRY_INVENTORY 或 DROP。
-
-## 核心结构
-
-| 组件 | 职责 |
-|---|---|
-| TraceManager | 创建、恢复、过期和幂等终结 |
-| TraceCacheManager | 内存记录、版本化 YAML 和原子写入 |
-| MannequinTraceProvider | NPC、点击代理、实体定位、修复和删除 |
-| MannequinEvents | NPC 交互、死亡拦截、区块加载和孤儿清理 |
-| TraceInteractionService | 方块与 NPC 的统一权限、距离和交互入口 |
-| TraceClaimService | 精确领取、自动装备和剩余量结算 |
-| TraceGuiManager | 分页、只取不存和单墓碑会话锁 |
-
-## 构建和测试
-
-要求 Java 25。
-
-~~~bash
-./gradlew test
-./gradlew build
-./gradlew runServer
-~~~
-
-当前单元测试覆盖配置默认值与边界、数据/位置隔离、提供者元数据不可变性和 UUID 解析。NPC 的真实点击、区块卸载和死亡实体行为仍需在 Paper 测试服进行人工回归。
+[![TracesDeath bStats](https://bstats.org/signatures/bukkit/TracesDeath.svg)](https://bstats.org/plugin/bukkit/TracesDeath/34148)

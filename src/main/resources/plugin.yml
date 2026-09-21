@@ -1,29 +1,20 @@
 name: TracesDeath
-description: 高版本玩家模型死亡墓碑插件
-version: '2.0-SNAPSHOT'
-authors:
-  - Polang
+description: 玩家死亡遗体与原槽位物品领取
+version: '2.1.0'
+authors: [Polang]
 website: https://github.com/PolangPlugin/TracesDeath
-
-main: cc.sbsj.mc.tracesDeath.TracesDeath
-api-version: '26.2'
+main: cc.sbsj.mc.tracesdeath.TracesDeath
+api-version: '1.13'
 load: POSTWORLD
-
 commands:
   tracesdeath:
-    description: 管理 TracesDeath 死亡痕迹插件
-    usage: /tracesdeath <list|locate|reload|types|info|remove|clear|debug>
-    aliases:
-      - td
-      - deathtrace
-
+    description: 查看遗体位置
+    usage: /td list | /td locate | /td reload | /td testpack [玩家]
+    aliases: [td, deathtrace]
 permissions:
-  tracesdeath.admin:
-    description: 允许管理 TracesDeath 插件
-    default: op
-  tracesdeath.admin.bypass:
-    description: 允许绕过墓碑所有者限制
-    default: op
   tracesdeath.use:
-    description: 允许使用死亡痕迹功能（默认所有玩家拥有）
+    description: 死亡时生成遗体
     default: true
+  tracesdeath.admin:
+    description: 管理遗体、重载配置及测试资源包
+    default: op
