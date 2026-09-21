@@ -1,5 +1,7 @@
 package cc.sbsj.mc.tracesdeath.commands;
 
+import cc.sbsj.mc.tracesdeath.language.Messages;
+
 import org.bukkit.command.CommandSender;
 
 public final class ReloadCommand {
@@ -9,25 +11,28 @@ public final class ReloadCommand {
     }
 
     private final Action action;
+    private final java.util.function.Supplier<Messages> messages;
 
-    public ReloadCommand(Action action) {
+    public ReloadCommand(Action action, java.util.function.Supplier<Messages> messages) {
         this.action = action;
+        this.messages = messages;
     }
 
     public void execute(CommandSender sender, String[] args) {
         if (!sender.hasPermission("tracesdeath.admin")) {
-            sender.sendMessage("你没有重载权限。");
+            sender.sendMessage(messages.get().text("command.no-permission"));
             return;
         }
         if (args.length != 1) {
-            sender.sendMessage("/td reload");
+            sender.sendMessage(messages.get().text("command.reload-usage"));
             return;
         }
         try {
             action.reload();
-            sender.sendMessage("TracesDeath 配置已重载，遗体界面已关闭，外观已刷新。");
+            sender.sendMessage(messages.get().text("command.reload-success"));
         } catch (Exception exception) {
-            sender.sendMessage("重载失败: " + exception.getMessage());
+            sender.sendMessage(
+                    messages.get().text("command.reload-failed", "error", exception.getMessage()));
         }
     }
 }

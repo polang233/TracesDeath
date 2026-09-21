@@ -33,7 +33,6 @@ public final class ChestMinecartRenderer implements CorpseRenderer {
             cart.setFlyingVelocityMod(new Vector());
             cart.setDerailedVelocityMod(new Vector());
             cart.getInventory().clear();
-            cart.setCustomName(corpse.name + " 的遗体");
             cart.setCustomNameVisible(true);
             return cart;
         } catch (RuntimeException exception) {

@@ -5,6 +5,8 @@ import cc.sbsj.mc.tracesdeath.config.CorpseAppearance;
 import cc.sbsj.mc.tracesdeath.corpse.Corpse;
 import cc.sbsj.mc.tracesdeath.corpse.CorpseItems;
 import cc.sbsj.mc.tracesdeath.corpse.CorpseService;
+import cc.sbsj.mc.tracesdeath.experience.Experience;
+import cc.sbsj.mc.tracesdeath.language.Messages;
 
 import org.bukkit.*;
 import org.bukkit.entity.Player;
@@ -30,6 +32,7 @@ public final class CorpseMenu implements Listener {
     private final CorpseService service;
     private final CorpseAppearance appearance;
     private final ServerAdapter serverAdapter;
+    private final Messages messages;
     private final Map<UUID, Session> viewers = new HashMap<>();
     private final Map<UUID, UUID> locks = new HashMap<>();
 
@@ -37,11 +40,13 @@ public final class CorpseMenu implements Listener {
             JavaPlugin plugin,
             CorpseService service,
             CorpseAppearance appearance,
-            ServerAdapter serverAdapter) {
+            ServerAdapter serverAdapter,
+            Messages messages) {
         this.plugin = plugin;
         this.service = service;
         this.appearance = appearance;
         this.serverAdapter = serverAdapter;
+        this.messages = messages;
     }
 
     public void open(Player player, UUID id) {
@@ -52,7 +57,7 @@ public final class CorpseMenu implements Listener {
                 && player.getOpenInventory().getTopInventory().getHolder() == existing) return;
         UUID viewer = locks.get(id);
         if (viewer != null && !viewer.equals(player.getUniqueId())) {
-            player.sendMessage("这具遗体正由另一位玩家查看。");
+            player.sendMessage(messages.text("menu.busy"));
             return;
         }
         player.closeInventory();
@@ -60,7 +65,9 @@ public final class CorpseMenu implements Listener {
         Session session = new Session(id);
         session.inventory =
                 serverAdapter.createInventory(
-                        session, menuTitle(corpse.name), appearance.usesCustomMenuTextures());
+                        session,
+                        menuTitle(corpse.name, messages),
+                        appearance.usesCustomMenuTextures());
         viewers.put(player.getUniqueId(), session);
         locks.put(id, player.getUniqueId());
         render(session);
@@ -88,11 +95,11 @@ public final class CorpseMenu implements Listener {
             "empty-offhand",
             "empty-mainhand"
         };
-        String[] names = {"头盔", "胸甲", "护腿", "靴子", "副手", "主手"};
         for (int slot = 0; slot < 6; slot++)
             if (session.inventory.getItem(slot) == null) {
                 session.inventory.setItem(
-                        slot, styled(roles[slot], pane(false, names[slot] + " · 空")));
+                        slot,
+                        styled(roles[slot], pane(false, messages.text("menu." + roles[slot]))));
             }
         session.inventory.setItem(DIVIDER, styled("divider", pane(true, " ")));
         for (int slot = 9; slot < 18; slot++)
@@ -101,49 +108,70 @@ public final class CorpseMenu implements Listener {
                 CLAIM_ALL,
                 styled(
                         "claim",
-                        label(
-                                Material.CHEST,
-                                "一键拾取",
-                                service.claimAllToInventory()
-                                        ? Arrays.asList("将全部物品收入背包", "放不下的物品掉落在脚下")
-                                        : Arrays.asList("按原槽位替换取回全部物品", "被替换或放不下的物品掉落在脚下"))));
-        String infoTitle = pages > 1 ? "遗体信息 · " + (session.page + 1) + "/" + pages : "遗体信息";
+                        label(Material.CHEST, messages.text("menu.claim"), claimLore(corpse))));
+        String infoTitle =
+                pages > 1
+                        ? messages.text("menu.info-page", "page", session.page + 1, "pages", pages)
+                        : messages.text("menu.info");
         session.inventory.setItem(
                 INFO,
-                styled("info", label(material("CLOCK", "WATCH"), infoTitle, information(corpse))));
+                styled(
+                        "info",
+                        label(
+                                material("CLOCK", "WATCH"),
+                                infoTitle,
+                                information(corpse, messages))));
     }
 
-    static String menuTitle(String playerName) {
+    private List<String> claimLore(Corpse corpse) {
+        List<String> lore =
+                messages.lines(
+                        service.claimAllToInventory() ? "menu.claim-fill" : "menu.claim-restore");
+        lore.add(messages.text("menu.claim-experience", "experience", corpse.experience()));
+        return lore;
+    }
+
+    static String menuTitle(String playerName, Messages messages) {
         String name = ChatColor.stripColor(playerName);
         int width = 0, end = 0;
         while (end < name.length()) {
             int codePoint = name.codePointAt(end);
             int glyphWidth = codePoint > 127 ? 9 : " il.,!:;|'".indexOf(codePoint) >= 0 ? 3 : 6;
-            if (width + glyphWidth > 96) return "   " + name.substring(0, end) + "… 的遗体";
+            if (width + glyphWidth > 96)
+                return messages.text("menu.title", "name", name.substring(0, end) + "…");
             width += glyphWidth;
             end += Character.charCount(codePoint);
         }
-        return "   " + name + " 的遗体";
+        return messages.text("menu.title", "name", name);
     }
 
-    static List<String> information(Corpse corpse) {
+    static List<String> information(Corpse corpse, Messages messages) {
         World world = Bukkit.getWorld(corpse.world);
         int occupiedSlots = corpse.items().size();
-        return Arrays.asList(
-                "死亡者：" + corpse.name,
-                "死亡时间："
-                        + (corpse.deathTime > 0
-                                ? TIME.format(Instant.ofEpochMilli(corpse.deathTime))
-                                : "未记录"),
-                "死亡位置："
-                        + (world == null ? corpse.world : world.getName())
+        String position =
+                (world == null ? corpse.world : world.getName())
                         + " "
                         + (int) Math.floor(corpse.x)
                         + " "
                         + (int) Math.floor(corpse.y)
                         + " "
-                        + (int) Math.floor(corpse.z),
-                "剩余物品格数：" + occupiedSlots);
+                        + (int) Math.floor(corpse.z);
+        return messages.lines(
+                "menu.information",
+                "name",
+                corpse.name,
+                "time",
+                corpse.deathTime > 0
+                        ? TIME.format(Instant.ofEpochMilli(corpse.deathTime))
+                        : messages.text("menu.unknown-time"),
+                "position",
+                position,
+                "slots",
+                occupiedSlots,
+                "experience",
+                corpse.experience(),
+                "level",
+                Experience.level(corpse.experience()));
     }
 
     private ItemStack styled(String role, ItemStack item) {
@@ -192,10 +220,11 @@ public final class CorpseMenu implements Listener {
         event.setCancelled(true);
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
+        int slot = event.getRawSlot();
+        boolean experienceOnly = slot == CLAIM_ALL && event.getClick() == ClickType.DROP;
         if (viewers.get(player.getUniqueId()) != session
                 || session.queued
-                || !isTakeClick(event.getClick())) return;
-        int slot = event.getRawSlot();
+                || (!isTakeClick(event.getClick()) && !experienceOnly)) return;
         if (slot < 0 || slot >= 54) return;
         boolean shifted = event.isShiftClick();
         Corpse currentCorpse = service.get(session.id);
@@ -216,12 +245,14 @@ public final class CorpseMenu implements Listener {
                                 return;
                             }
                             Corpse corpse = service.get(session.id);
-                            if (slot == CLAIM_ALL) service.claimAll(player, session.id);
-                            else if (slot == INFO) {
+                            if (slot == CLAIM_ALL) {
+                                if (experienceOnly) service.claimExperience(player, session.id);
+                                else service.claimAll(player, session.id);
+                            } else if (slot == INFO) {
                                 if (nextPage) {
                                     int pages = CorpseItems.pages(corpse.items());
                                     session.page = (session.page + 1) % pages;
-                                } else information(corpse).forEach(player::sendMessage);
+                                } else information(corpse, messages).forEach(player::sendMessage);
                             } else {
                                 int source =
                                         CorpseItems.sourceSlot(session.page, slot, corpse.heldSlot);

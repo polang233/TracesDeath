@@ -12,6 +12,11 @@ import org.bukkit.inventory.InventoryHolder;
 import java.util.List;
 
 public interface ServerAdapter {
+    default List<org.bukkit.inventory.ItemStack> keptItems(
+            org.bukkit.event.entity.PlayerDeathEvent event) {
+        return java.util.Collections.emptyList();
+    }
+
     boolean supportsResourcePack();
 
     Location findGroundLocation(Location location);

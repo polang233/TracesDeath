@@ -1,6 +1,6 @@
 name: TracesDeath
 description: 玩家死亡遗体与原槽位物品领取
-version: '2.1.0'
+version: '2.1.5'
 authors: [Polang]
 website: https://github.com/PolangPlugin/TracesDeath
 main: cc.sbsj.mc.tracesdeath.TracesDeath

@@ -23,7 +23,10 @@ class TracesDeathCommandTest {
         Player player = mock(Player.class);
         when(player.hasPermission("tracesdeath.admin")).thenReturn(true);
         new TracesDeathCommand(
-                        service, mock(ResourcePackTestCommand.class), mock(ReloadCommand.class))
+                        service,
+                        mock(ResourcePackTestCommand.class),
+                        mock(ReloadCommand.class),
+                        cc.sbsj.mc.tracesdeath.language.Messages.bundled("zh_CN"))
                 .onCommand(
                         player,
                         null,
@@ -39,7 +42,10 @@ class TracesDeathCommandTest {
         UUID id = UUID.randomUUID();
         TracesDeathCommand command =
                 new TracesDeathCommand(
-                        service, mock(ResourcePackTestCommand.class), mock(ReloadCommand.class));
+                        service,
+                        mock(ResourcePackTestCommand.class),
+                        mock(ReloadCommand.class),
+                        cc.sbsj.mc.tracesdeath.language.Messages.bundled("zh_CN"));
         command.onCommand(
                 console, null, "td", new String[] {"recover", id.toString(), "delivered"});
         verify(service).resolveClaim(id, true);
@@ -53,7 +59,10 @@ class TracesDeathCommandTest {
         CorpseService service = mock(CorpseService.class);
         ConsoleCommandSender console = mock(ConsoleCommandSender.class);
         new TracesDeathCommand(
-                        service, mock(ResourcePackTestCommand.class), mock(ReloadCommand.class))
+                        service,
+                        mock(ResourcePackTestCommand.class),
+                        mock(ReloadCommand.class),
+                        cc.sbsj.mc.tracesdeath.language.Messages.bundled("zh_CN"))
                 .onCommand(
                         console,
                         null,
@@ -74,7 +83,10 @@ class TracesDeathCommandTest {
         when(service.getAll()).thenReturn(List.of(own, other));
         TracesDeathCommand command =
                 new TracesDeathCommand(
-                        service, mock(ResourcePackTestCommand.class), mock(ReloadCommand.class));
+                        service,
+                        mock(ResourcePackTestCommand.class),
+                        mock(ReloadCommand.class),
+                        cc.sbsj.mc.tracesdeath.language.Messages.bundled("zh_CN"));
         try (var ignored = mockStatic(Bukkit.class)) {
             assertTrue(command.onCommand(player, null, "td", new String[0]));
             verify(player).sendMessage(contains(own.id.toString()));

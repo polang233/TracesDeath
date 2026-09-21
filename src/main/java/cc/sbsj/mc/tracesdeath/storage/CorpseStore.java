@@ -3,6 +3,7 @@ package cc.sbsj.mc.tracesdeath.storage;
 import cc.sbsj.mc.tracesdeath.corpse.Corpse;
 import cc.sbsj.mc.tracesdeath.corpse.CorpseItems;
 import cc.sbsj.mc.tracesdeath.corpse.SkinProperty;
+import cc.sbsj.mc.tracesdeath.experience.Experience;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -37,7 +38,7 @@ public final class CorpseStore {
                 YamlConfiguration yaml = new YamlConfiguration();
                 yaml.load(
                         file.toFile()); // Do not silently turn a damaged file into an empty record.
-                if (yaml.getInt("schema") < 1 || yaml.getInt("schema") > 3)
+                if (yaml.getInt("schema") < 1 || yaml.getInt("schema") > 4)
                     throw new IOException("Unsupported schema: " + file);
                 UUID id = UUID.fromString(required(yaml, "id"));
                 if (!file.getFileName().toString().equals(id + ".yml"))
@@ -67,7 +68,12 @@ public final class CorpseStore {
                                 skin,
                                 Math.max(0, yaml.getLong("death-time", 0)),
                                 readItems(yaml, "items", Integer.MAX_VALUE));
+                if (yaml.getInt("schema") >= 4 && !yaml.isInt("experience"))
+                    throw new IOException("Missing or invalid experience: " + file);
+                corpse.setExperience(yaml.getInt("experience", 0));
                 if (yaml.contains("pending")) {
+                    if (yaml.getInt("schema") >= 4 && !yaml.isInt("pending.experience-taken"))
+                        throw new IOException("Missing or invalid pending experience: " + file);
                     int inventorySize = yaml.getInt("pending.inventory-size", 36);
                     corpse.begin(
                             new Corpse.PendingClaim(
@@ -84,7 +90,10 @@ public final class CorpseStore {
                                                                     Integer.MAX_VALUE)
                                                             .values())
                                             : Collections.emptyList(),
-                                    yaml.getBoolean("pending.drops-started", false)));
+                                    yaml.getBoolean("pending.drops-started", false),
+                                    readExperience(yaml, "pending.experience-before"),
+                                    readExperience(yaml, "pending.experience-after"),
+                                    yaml.getInt("pending.experience-taken", 0)));
                 }
                 result.add(corpse);
             }
@@ -94,7 +103,7 @@ public final class CorpseStore {
 
     public void save(Corpse corpse) throws IOException {
         YamlConfiguration yaml = new YamlConfiguration();
-        yaml.set("schema", 3);
+        yaml.set("schema", 4);
         yaml.set("id", corpse.id.toString());
         // A durable empty marker prevents failed deletion from resurrecting old inventory.
         yaml.set("completed", corpse.empty() && corpse.pending() == null);
@@ -111,10 +120,14 @@ public final class CorpseStore {
                     "skin",
                     corpse.skin.stream().map(SkinProperty::serialize).collect(Collectors.toList()));
             yaml.set("death-time", corpse.deathTime);
+            yaml.set("experience", corpse.experience());
             writeItems(yaml, "items", corpse.items());
             Corpse.PendingClaim pending = corpse.pending();
             if (pending != null) {
                 yaml.set("pending.player", pending.player().toString());
+                yaml.set("pending.experience-taken", pending.experienceTaken());
+                writeExperience(yaml, "pending.experience-before", pending.experienceBefore());
+                writeExperience(yaml, "pending.experience-after", pending.experienceAfter());
                 yaml.set("pending.inventory-size", pending.inventorySize());
                 yaml.set("pending.drops-started", pending.dropsStarted());
                 writeItems(
@@ -127,6 +140,27 @@ public final class CorpseStore {
             }
         }
         atomicWrite(directory.resolve(corpse.id + ".yml"), yaml.saveToString());
+    }
+
+    private static void writeExperience(
+            YamlConfiguration yaml, String path, Experience.Snapshot value) {
+        if (value == null) return;
+        yaml.set(path + ".level", value.level);
+        yaml.set(path + ".progress", value.progress);
+        yaml.set(path + ".total", value.total);
+    }
+
+    private static Experience.Snapshot readExperience(YamlConfiguration yaml, String path)
+            throws IOException {
+        if (!yaml.contains(path)) return null;
+        if (!yaml.isInt(path + ".level")
+                || !yaml.isInt(path + ".total")
+                || !yaml.contains(path + ".progress"))
+            throw new IOException("Incomplete experience snapshot: " + path);
+        return new Experience.Snapshot(
+                yaml.getInt(path + ".level"),
+                (float) yaml.getDouble(path + ".progress"),
+                yaml.getInt(path + ".total"));
     }
 
     static void atomicWrite(Path target, String contents) throws IOException {

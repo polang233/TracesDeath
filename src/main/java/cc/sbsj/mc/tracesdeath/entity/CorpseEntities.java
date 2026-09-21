@@ -1,6 +1,7 @@
 package cc.sbsj.mc.tracesdeath.entity;
 
 import cc.sbsj.mc.tracesdeath.corpse.Corpse;
+import cc.sbsj.mc.tracesdeath.language.Messages;
 
 import org.bukkit.*;
 import org.bukkit.entity.*;
@@ -31,18 +32,21 @@ public final class CorpseEntities implements Listener {
     private final BiConsumer<Player, UUID> open;
     private final Consumer<UUID> close;
     private final Method persistent;
+    private final Messages messages;
 
     public CorpseEntities(
             JavaPlugin plugin,
             Map<UUID, Corpse> corpses,
             BiConsumer<Player, UUID> open,
             Consumer<UUID> close,
-            CorpseRenderer renderer) {
+            CorpseRenderer renderer,
+            Messages messages) {
         this.plugin = plugin;
         this.corpses = corpses;
         this.open = open;
         this.close = close;
         this.renderer = renderer;
+        this.messages = messages;
         Method method;
         try {
             method = Entity.class.getMethod("setPersistent", boolean.class);
@@ -94,6 +98,8 @@ public final class CorpseEntities implements Listener {
                 };
         try {
             Entity visual = renderer.spawn(world, model, corpse, configure);
+            if (visual.isCustomNameVisible())
+                visual.setCustomName(messages.text("entity.name", "name", corpse.name));
             Entity hitbox = renderer.hitbox(world, anchor, visual, configure);
             if (!visual.isValid()
                     || !hitbox.isValid()
