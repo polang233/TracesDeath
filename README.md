@@ -46,7 +46,7 @@ loot:
 
 `auto` 在支持的 Paper 上选用 Mannequin，其余选用箱子矿车。设置 `corpse.type: tombstone` 并重启后，会生成 `tombstone.yml`，其中可以配置墓碑模型、GUI 材质和手动测试地址。其他遗体类型不会生成或读取此文件；已有文件会保留。
 
-启用墓碑模式后在 `plugins/TracesDeath/resource-packs/` 导出包含 GUI 和墓碑素材的内置包，玩家将对应版本 ZIP 放入客户端 `.minecraft/resourcepacks/`，并在游戏资源包设置中启用即可。墓碑配置默认开启 GUI 装饰。GUI 保留原版按钮，加载材质后增加界面装饰；墓碑加载材质后显示自定义模型。管理员可用 `/td testpack [玩家]` 手动测试。按钮材质、名称、Lore 与 CustomModelData 可在 `tombstone.yml` 的 `gui.items` 中调整。详见[材质设置](docs/ENTITY_TYPES.md#资源包与界面)。
+启用墓碑模式后在 `plugins/TracesDeath/resource-packs/` 导出包含 GUI 和墓碑素材的内置包，内置包统一支持 1.20+ 客户端。玩家将 ZIP 放入客户端 `.minecraft/resourcepacks/`，并在游戏资源包设置中启用即可。墓碑配置默认开启 GUI 装饰。GUI 保留原版按钮，加载材质后增加界面装饰；墓碑加载材质后显示自定义模型。管理员可用 `/td testpack [玩家]` 手动测试。按钮材质、名称、Lore 与 CustomModelData 可在 `tombstone.yml` 的 `gui.items` 中调整。详见[材质设置](docs/ENTITY_TYPES.md#资源包与界面)。
 
 修改配置后重启生效。单格领取时，背包放不下的物品保留在遗体中。
 

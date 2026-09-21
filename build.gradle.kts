@@ -30,25 +30,18 @@ java {
     toolchain.languageVersion = JavaLanguageVersion.of(21)
 }
 
-// Both visual features share one resource pack, with metadata for each client generation.
-val resourcePackTasks = listOf(false, true).map { legacy ->
-    val suffix = if (legacy) "-1.19.4" else ""
-    tasks.register<Zip>("bundleResourcePack${if (legacy) "Legacy" else "Modern"}") {
-        archiveFileName.set("tracesdeath$suffix.zip")
-        destinationDirectory.set(layout.buildDirectory.dir("generated/resource-packs"))
-        from("resource-pack") {
-            include("assets/**", "pack.png")
-            if (!legacy) include("pack.mcmeta")
-        }
-        if (legacy) from("resource-pack/metadata/1.19.4") { include("pack.mcmeta") }
-        isPreserveFileTimestamps = false
-        isReproducibleFileOrder = true
-    }
+// GUI and tombstone assets share one resource pack for Minecraft 1.20+ clients.
+val bundledResourcePack by tasks.registering(Zip::class) {
+    archiveFileName.set("tracesdeath.zip")
+    destinationDirectory.set(layout.buildDirectory.dir("generated/resource-packs"))
+    from("resource-pack") { include("assets/**", "pack.png", "pack.mcmeta") }
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
 }
 
 tasks {
     processResources {
-        resourcePackTasks.forEach { pack -> from(pack) { into("resource-packs") } }
+        from(bundledResourcePack) { into("resource-packs") }
     }
     compileJava { options.release.set(8) }
     named<JavaCompile>(display.compileJavaTaskName) { options.release.set(17) }

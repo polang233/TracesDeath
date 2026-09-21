@@ -180,14 +180,6 @@ def main():
                 info=zipfile.ZipInfo(file.relative_to(PACK).as_posix(),(2020,1,1,0,0,0))
                 info.compress_type=zipfile.ZIP_DEFLATED
                 archive.writestr(info,file.read_bytes())
-    legacy=output.with_name('TracesDeath-Prototype-1.19.4.zip')
-    with zipfile.ZipFile(output) as source, zipfile.ZipFile(legacy,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as archive:
-        for info in source.infolist():
-            content=source.read(info.filename)
-            if info.filename=='pack.mcmeta':
-                content=json.dumps({'pack':{'description':'TracesDeath · 墓碑与遗体界面','pack_format':13}},ensure_ascii=False).encode('utf-8')
-            archive.writestr(info,content)
-    legacy.with_suffix('.sha1').write_text(hashlib.sha1(legacy.read_bytes()).hexdigest()+'\n',encoding='utf-8')
     sha1=hashlib.sha1(output.read_bytes()).hexdigest()
     output.with_suffix('.sha1').write_text(sha1+'\n',encoding='utf-8')
     print(f'{output}\nSHA-1: {sha1}\nModel and texture references verified')

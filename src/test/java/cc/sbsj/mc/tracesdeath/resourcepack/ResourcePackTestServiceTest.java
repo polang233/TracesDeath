@@ -44,7 +44,7 @@ class ResourcePackTestServiceTest {
                     new ResourcePackTestService(
                             plugin,
                             CustomTextureSettings.read(config),
-                            ServerVersion.parse("1.19.4"));
+                            ServerVersion.parse("1.20"));
             service.exportPacks();
             bukkit.verifyNoInteractions();
             try (var pack =
@@ -56,9 +56,8 @@ class ResourcePackTestServiceTest {
             var player = mock(Player.class);
             service.send(player);
             byte[] expected =
-                    Files.readAllBytes(
-                            directory.resolve("resource-packs/test-tracesdeath-1.19.4.zip"));
-            String url = "http://127.0.0.1:" + port + "/tracesdeath-1.19.4.zip";
+                    Files.readAllBytes(directory.resolve("resource-packs/test-tracesdeath.zip"));
+            String url = "http://127.0.0.1:" + port + "/tracesdeath.zip";
             verify(player)
                     .setResourcePack(
                             eq(url),

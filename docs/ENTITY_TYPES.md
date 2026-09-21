@@ -74,9 +74,9 @@ gui:
 
 ### 安装与合并
 
-启用墓碑模式后，在 `plugins/TracesDeath/resource-packs/` 导出带插件版本号的组合包与 SHA-1。`tracesdeath.zip` 供 1.20+ 使用，`tracesdeath-1.19.4.zip` 供 1.19.4 使用，两者都包含 GUI 与墓碑素材。
+启用墓碑模式后，在 `plugins/TracesDeath/resource-packs/` 导出带插件版本号的组合包与 SHA-1。`tracesdeath.zip` 统一采用 1.20+ 格式，包含 GUI 与墓碑素材。
 
-Release 同时提供插件 JAR 与资源包 ZIP。玩家把对应版本 ZIP 放到客户端 `.minecraft/resourcepacks/`，在游戏“选项 → 资源包”中启用，使用默认墓碑配置即可显示模型与 GUI。服主也可合并到已有资源包。合并 GUI 时保留 `assets/minecraft/font/default.json` 的三个字形定义；合并墓碑时保留 `assets/tracesdeath` 中的墓碑素材及石头的模型分派，和已有分派规则一起合并。资源包格式以目标客户端为准。
+Release 同时提供插件 JAR 与资源包 ZIP。玩家把资源包 ZIP 放到客户端 `.minecraft/resourcepacks/`，在游戏“选项 → 资源包”中启用，使用默认墓碑配置即可显示模型与 GUI。服主也可合并到已有资源包。合并 GUI 时保留 `assets/minecraft/font/default.json` 的三个字形定义；合并墓碑时保留 `assets/tracesdeath` 中的墓碑素材及石头的模型分派，和已有分派规则一起合并。资源包格式以目标客户端为准。
 
 ### 自定义引用
 
@@ -115,6 +115,6 @@ test-server:
   public-url: 'http://127.0.0.1:8163'
 ```
 
-仅执行测试命令时启动下载服务，停止插件时关闭。`public-url` 是下载根地址，命令自动追加 ZIP 文件名；给远程玩家测试时填写其能访问的域名或 IP，并放行对应端口。测试包按服务端版本选择，跨版本客户端可自行安装对应 ZIP。
+仅执行测试命令时启动下载服务，停止插件时关闭。`public-url` 是下载根地址，命令自动追加 ZIP 文件名；给远程玩家测试时填写其能访问的域名或 IP，并放行对应端口。测试命令要求服务端 1.20+，内置包供 1.20+ 客户端使用。
 
 配置校验、组合包内容和测试命令通过针对性单元测试及构建验证。遗体核心回归覆盖 Paper 1.12.2、1.19.4、1.21.9。
