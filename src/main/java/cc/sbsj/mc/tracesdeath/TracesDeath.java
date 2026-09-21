@@ -39,8 +39,9 @@ public final class TracesDeath extends JavaPlugin {
         TracesDeathCommand handler =
                 new TracesDeathCommand(
                         runtime.getCorpses(),
-                        new ResourcePackTestCommand(runtime.getPacks()),
-                        new ReloadCommand(this::reloadSettings));
+                        new ResourcePackTestCommand(runtime.getPacks(), runtime.getMessages()),
+                        new ReloadCommand(this::reloadSettings, () -> runtime.getMessages()),
+                        runtime.getMessages());
         command.setExecutor(handler);
         command.setTabCompleter(handler);
     }

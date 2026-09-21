@@ -30,6 +30,49 @@ class CorpseStoreTest {
     }
 
     @Test
+    void savesExperienceOnlyCorpseAndPendingExperienceSnapshots() throws Exception {
+        var id = java.util.UUID.randomUUID();
+        var corpse =
+                new cc.sbsj.mc.tracesdeath.corpse.Corpse(
+                        id,
+                        id,
+                        "Player",
+                        id,
+                        0,
+                        64,
+                        0,
+                        0,
+                        0,
+                        java.util.List.of(),
+                        1,
+                        java.util.Map.of());
+        corpse.setExperience(36);
+        var before = new cc.sbsj.mc.tracesdeath.experience.Experience.Snapshot(6, .5f, 123);
+        corpse.begin(
+                new cc.sbsj.mc.tracesdeath.corpse.Corpse.PendingClaim(
+                        id,
+                        41,
+                        java.util.Map.of(),
+                        java.util.Map.of(),
+                        java.util.Map.of(),
+                        java.util.List.of(),
+                        false,
+                        before,
+                        before.add(36),
+                        36));
+        var store = new CorpseStore(directory);
+        store.save(corpse);
+        var loaded = store.load().getFirst();
+        assertEquals(36, loaded.experience());
+        assertEquals(36, loaded.pending().experienceTaken());
+        assertEquals(.5f, loaded.pending().experienceBefore().progress);
+        assertEquals(123, loaded.pending().experienceBefore().total);
+        loaded.finish(true);
+        store.save(loaded);
+        assertTrue(store.load().isEmpty());
+    }
+
+    @Test
     void corruptRecordStopsLoadingInsteadOfDiscardingItems() throws Exception {
         CorpseStore store = new CorpseStore(directory);
         Files.writeString(directory.resolve("broken.yml"), "schema: 99\n");

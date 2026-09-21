@@ -7,8 +7,6 @@ import com.destroystokyo.paper.profile.ProfileProperty;
 
 import io.papermc.paper.datacomponent.item.ResolvableProfile;
 
-import net.kyori.adventure.text.Component;
-
 import org.bukkit.*;
 import org.bukkit.entity.*;
 
@@ -37,7 +35,6 @@ public final class MannequinRenderer implements CorpseRenderer {
                     entity.setProfile(ResolvableProfile.resolvableProfile(profile));
                     entity.setSkinParts(SkinParts.allParts());
                     entity.setDescription(null);
-                    entity.customName(Component.text(corpse.name + " 的遗体"));
                     entity.setCustomNameVisible(true);
                     entity.setImmovable(true);
                     entity.setAI(false);

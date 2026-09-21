@@ -27,10 +27,26 @@ class CorpseMenuTest {
 
     @Test
     void longTitlesAreBoundedWithoutSplittingUnicode() {
-        assertEquals("   Polang_ 的遗体", CorpseMenu.menuTitle("Polang_"));
-        assertEquals("   LongPlayerName16 的遗体", CorpseMenu.menuTitle("LongPlayerName16"));
-        assertTrue(CorpseMenu.menuTitle("这是一个很长很长很长很长的玩家名字").endsWith("… 的遗体"));
-        assertTrue(CorpseMenu.menuTitle("x".repeat(100)).length() < 30);
+        assertEquals(
+                "   Polang_ 的遗体",
+                CorpseMenu.menuTitle(
+                        "Polang_", cc.sbsj.mc.tracesdeath.language.Messages.bundled("zh_CN")));
+        assertEquals(
+                "   LongPlayerName16 的遗体",
+                CorpseMenu.menuTitle(
+                        "LongPlayerName16",
+                        cc.sbsj.mc.tracesdeath.language.Messages.bundled("zh_CN")));
+        assertTrue(
+                CorpseMenu.menuTitle(
+                                "这是一个很长很长很长很长的玩家名字",
+                                cc.sbsj.mc.tracesdeath.language.Messages.bundled("zh_CN"))
+                        .endsWith("… 的遗体"));
+        assertTrue(
+                CorpseMenu.menuTitle(
+                                        "x".repeat(100),
+                                        cc.sbsj.mc.tracesdeath.language.Messages.bundled("zh_CN"))
+                                .length()
+                        < 30);
     }
 
     @Test
@@ -47,9 +63,11 @@ class CorpseMenuTest {
     void informationIncludesIdentityTimeAndLocation() {
         Corpse corpse = sampleCorpse();
         try (var ignored = mockStatic(Bukkit.class)) {
-            var info = CorpseMenu.information(corpse);
+            var info =
+                    CorpseMenu.information(
+                            corpse, cc.sbsj.mc.tracesdeath.language.Messages.bundled("zh_CN"));
             assertTrue(info.contains("死亡者：Player"));
-            assertEquals(4, info.size());
+            assertEquals(5, info.size());
             assertTrue(info.contains("剩余物品格数：0"));
             assertTrue(info.stream().anyMatch(line -> line.startsWith("死亡时间：2023-11-")));
             assertTrue(info.stream().anyMatch(line -> line.endsWith("0 64 0")));
@@ -74,7 +92,11 @@ class CorpseMenuTest {
                         0,
                         original.items());
         try (var ignored = mockStatic(Bukkit.class)) {
-            assertTrue(CorpseMenu.information(legacy).contains("死亡时间：未记录"));
+            assertTrue(
+                    CorpseMenu.information(
+                                    legacy,
+                                    cc.sbsj.mc.tracesdeath.language.Messages.bundled("zh_CN"))
+                            .contains("死亡时间：未记录"));
         }
     }
 }

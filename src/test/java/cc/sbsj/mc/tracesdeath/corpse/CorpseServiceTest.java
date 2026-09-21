@@ -197,6 +197,78 @@ class CorpseServiceTest {
         }
     }
 
+    @Test
+    void experienceOnlyClaimLeavesItemsAndLastItemCollectsRemainingExperience() throws Exception {
+        for (boolean onlyExperience : new boolean[] {true, false}) {
+            Fixture f = new Fixture();
+            f.corpse.setExperience(36);
+            try (var bukkit = mockStatic(Bukkit.class)) {
+                bukkit.when(Bukkit::getPluginManager).thenReturn(mock(PluginManager.class));
+                bukkit.when(Bukkit::getScheduler).thenReturn(mock(BukkitScheduler.class));
+                bukkit.when(Bukkit::getOnlinePlayers).thenReturn(List.of());
+                f.service.start();
+                if (onlyExperience) f.service.claimExperience(f.player, f.corpse.id);
+                else f.service.claim(f.player, f.corpse.id, 39);
+                verify(f.player).setLevel(3);
+                verify(f.player).setExp(9f / 13f);
+                verify(f.player).setTotalExperience(36);
+                var order = inOrder(f.store, f.player);
+                order.verify(f.store).save(any());
+                order.verify(f.player).setLevel(3);
+                order.verify(f.player).saveData();
+                order.verify(f.store).save(any());
+                if (onlyExperience) {
+                    assertEquals(0, f.service.get(f.corpse.id).experience());
+                    assertEquals(1, f.service.get(f.corpse.id).items().size());
+                } else assertNull(f.service.get(f.corpse.id));
+            }
+        }
+    }
+
+    @Test
+    void experienceRecoveryDistinguishesIdenticalInventorySnapshots() throws Exception {
+        for (int outcome = 0; outcome < 3; outcome++) {
+            Fixture f = new Fixture();
+            f.corpse.setExperience(36);
+            var before = new cc.sbsj.mc.tracesdeath.experience.Experience.Snapshot(0, 0, 0);
+            var after = before.add(36);
+            f.corpse.begin(
+                    new Corpse.PendingClaim(
+                            f.corpse.owner,
+                            41,
+                            Map.of(),
+                            Map.of(),
+                            f.corpse.items(),
+                            List.of(),
+                            false,
+                            before,
+                            after,
+                            36));
+            if (outcome > 0) {
+                when(f.player.getLevel()).thenReturn(outcome == 1 ? after.level : 8);
+                when(f.player.getExp()).thenReturn(after.progress);
+                when(f.player.getTotalExperience()).thenReturn(after.total);
+            }
+            try (var bukkit = mockStatic(Bukkit.class)) {
+                bukkit.when(Bukkit::getPluginManager).thenReturn(mock(PluginManager.class));
+                bukkit.when(Bukkit::getScheduler).thenReturn(mock(BukkitScheduler.class));
+                bukkit.when(Bukkit::getOnlinePlayers).thenReturn(List.of());
+                f.service.start();
+                f.service.join(
+                        new org.bukkit.event.player.PlayerJoinEvent(
+                                f.player, net.kyori.adventure.text.Component.empty()));
+                verify(f.player, never()).setLevel(anyInt());
+                if (outcome == 2) {
+                    assertNotNull(f.service.get(f.corpse.id).pending());
+                    verify(f.player).kickPlayer(anyString());
+                } else {
+                    assertNull(f.service.get(f.corpse.id).pending());
+                    assertEquals(outcome == 1 ? 0 : 36, f.service.get(f.corpse.id).experience());
+                }
+            }
+        }
+    }
+
     private static final class Fixture {
         final Corpse corpse = CorpseTest.corpse();
         final CorpseStore store = mock(CorpseStore.class);
@@ -231,7 +303,10 @@ class CorpseServiceTest {
                             false,
                             false,
                             cc.sbsj.mc.tracesdeath.config.CorpseAppearance.VANILLA,
-                            serverAdapter);
+                            serverAdapter,
+                            cc.sbsj.mc.tracesdeath.language.Messages.bundled("zh_CN"),
+                            new cc.sbsj.mc.tracesdeath.config.DeathSettings(
+                                    new org.bukkit.configuration.file.YamlConfiguration()));
         }
     }
 }

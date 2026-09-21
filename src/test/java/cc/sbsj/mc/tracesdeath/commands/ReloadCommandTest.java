@@ -10,7 +10,9 @@ class ReloadCommandTest {
     void requiresPermissionAndReportsFailureWithoutSuccessMessage() throws Exception {
         var action = mock(ReloadCommand.Action.class);
         var sender = mock(CommandSender.class);
-        var command = new ReloadCommand(action);
+        var command =
+                new ReloadCommand(
+                        action, () -> cc.sbsj.mc.tracesdeath.language.Messages.bundled("zh_CN"));
         command.execute(sender, new String[] {"reload"});
         verifyNoInteractions(action);
         when(sender.hasPermission("tracesdeath.admin")).thenReturn(true);

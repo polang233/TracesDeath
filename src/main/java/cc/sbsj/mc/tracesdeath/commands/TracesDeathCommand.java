@@ -2,6 +2,7 @@ package cc.sbsj.mc.tracesdeath.commands;
 
 import cc.sbsj.mc.tracesdeath.corpse.Corpse;
 import cc.sbsj.mc.tracesdeath.corpse.CorpseService;
+import cc.sbsj.mc.tracesdeath.language.Messages;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -24,12 +25,17 @@ public final class TracesDeathCommand implements CommandExecutor, TabCompleter {
     private final CorpseService service;
     private final ResourcePackTestCommand resourcePackTest;
     private final ReloadCommand reload;
+    private final Messages messages;
 
     public TracesDeathCommand(
-            CorpseService service, ResourcePackTestCommand resourcePackTest, ReloadCommand reload) {
+            CorpseService service,
+            ResourcePackTestCommand resourcePackTest,
+            ReloadCommand reload,
+            Messages messages) {
         this.resourcePackTest = resourcePackTest;
         this.reload = reload;
         this.service = service;
+        this.messages = messages;
     }
 
     @Override
@@ -68,21 +74,27 @@ public final class TracesDeathCommand implements CommandExecutor, TabCompleter {
                     || sender instanceof Player
                             && corpse.owner.equals(((Player) sender).getUniqueId())) {
                 sender.sendMessage(
-                        corpse.id
-                                + " · "
-                                + corpse.name
-                                + " · "
-                                + position(corpse)
-                                + (corpse.pending() != null ? " · 领取待恢复" : ""));
+                        messages.text(
+                                "command.list-entry",
+                                "id",
+                                corpse.id,
+                                "name",
+                                corpse.name,
+                                "position",
+                                position(corpse),
+                                "pending",
+                                corpse.pending() != null ? messages.text("command.pending") : ""));
                 count++;
             }
         }
-        sender.sendMessage("共 " + count + " 具遗体。");
+        sender.sendMessage(messages.text("command.list-total", "count", count));
     }
 
     private void locate(Player player) {
         for (Corpse corpse : service.getAll()) {
-            if (corpse.owner.equals(player.getUniqueId())) player.sendMessage(position(corpse));
+            if (corpse.owner.equals(player.getUniqueId()))
+                player.sendMessage(
+                        messages.text("command.locate-entry", "position", position(corpse)));
         }
     }
 
@@ -92,20 +104,21 @@ public final class TracesDeathCommand implements CommandExecutor, TabCompleter {
             boolean delivered;
             if ("delivered".equals(args[2])) delivered = true;
             else if ("not-delivered".equals(args[2])) delivered = false;
-            else throw new IllegalArgumentException("结果须为 delivered 或 not-delivered");
+            else throw new IllegalArgumentException(messages.text("command.recover-outcome"));
             service.resolveClaim(id, delivered);
-            sender.sendMessage("已保存恢复结果: " + id);
+            sender.sendMessage(messages.text("command.recover-success", "id", id));
         } catch (Exception exception) {
-            sender.sendMessage("恢复失败: " + exception.getMessage());
+            sender.sendMessage(
+                    messages.text("command.recover-failed", "error", exception.getMessage()));
         }
     }
 
     private void help(CommandSender sender) {
-        sender.sendMessage("/td list | /td locate");
+        sender.sendMessage(messages.text("command.help"));
         if (sender.hasPermission("tracesdeath.admin"))
-            sender.sendMessage("/td reload | /td testpack [玩家]");
+            sender.sendMessage(messages.text("command.admin-help"));
         if (sender instanceof ConsoleCommandSender) {
-            sender.sendMessage("/td recover <ID> <delivered|not-delivered>（核对物品后使用）");
+            sender.sendMessage(messages.text("command.recover-help"));
         }
     }
 

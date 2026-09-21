@@ -1,7 +1,10 @@
 # 修改后执行 /td reload 生效。
+# zh_CN / en_US，文件位于 languages/，也可使用自定义文件名（不带 .yml）。
+language: zh_CN
+
 corpse:
   # auto：支持时使用 Mannequin，其余使用箱子矿车。
-  # mannequin：Paper 1.21.9+；tombstone：Paper 1.19.4+，需要客户端资源包。
+  # mannequin：Paper 1.21.9+；tombstone：Paper 1.19.4+，可选客户端资源包。
   # chest_minecart：Bukkit/Spigot/Paper 1.12+。
   # 选择 tombstone 并重载后生成 tombstone.yml，可设置墓碑模型和 GUI 材质。
   type: auto
@@ -12,3 +15,17 @@ loot:
   # restore_slots：恢复死亡时原槽位，冲突物品掉在脚下。
   # fill_inventory：顺序收入背包，放不下的遗体物品掉在脚下。
   claim-all-mode: restore_slots
+
+death:
+  # 保留背包时跳过遗体。关闭后仅能收集确实失去的经验，背包物品始终不会复制。
+  skip-keep-inventory: true
+  # 忽略颜色、不区分大小写，包含任一文字就不收入遗体。
+  # 命中物品仍由死亡掉落或其他插件处理；本插件不会自动返还它们。
+  exclude-items:
+    name-contains: []
+    lore-contains: [] # 例如 ['灵魂绑定', 'Soulbound']
+
+experience:
+  # 保存当前等级与进度条换算出的经验点，向下取整。0 不接管经验，100 全部保存。
+  # 已保留经验、设置重生经验或修改原版经验掉落的其他插件优先。
+  keep-percent: 50

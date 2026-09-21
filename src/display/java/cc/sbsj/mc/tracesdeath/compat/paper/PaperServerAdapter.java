@@ -29,6 +29,11 @@ public final class PaperServerAdapter extends BukkitServerAdapter {
     }
 
     @Override
+    public List<ItemStack> keptItems(org.bukkit.event.entity.PlayerDeathEvent event) {
+        return event.getItemsToKeep();
+    }
+
+    @Override
     public boolean supportsResourcePack() {
         return true;
     }
@@ -66,15 +71,15 @@ public final class PaperServerAdapter extends BukkitServerAdapter {
 
     @Override
     public Inventory createInventory(InventoryHolder holder, String title, boolean textured) {
-        Component component = Component.text(title, NamedTextColor.DARK_RED);
+        Component component =
+                net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+                        .deserialize(title)
+                        .colorIfAbsent(NamedTextColor.DARK_RED);
         if (textured) {
             component =
                     Component.text(textures.getTitlePrefix(), NamedTextColor.WHITE)
                             .font(Key.key("minecraft:default"))
-                            .append(
-                                    component
-                                            .font(Key.key("minecraft:default"))
-                                            .color(NamedTextColor.DARK_RED));
+                            .append(component.font(Key.key("minecraft:default")));
         }
         return Bukkit.createInventory(holder, 54, component);
     }

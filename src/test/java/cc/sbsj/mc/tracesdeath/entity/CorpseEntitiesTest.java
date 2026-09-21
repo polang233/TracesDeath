@@ -93,7 +93,8 @@ class CorpseEntitiesTest {
                             Map.of(),
                             open,
                             ignored -> {},
-                            mock(cc.sbsj.mc.tracesdeath.entity.CorpseRenderer.class));
+                            mock(cc.sbsj.mc.tracesdeath.entity.CorpseRenderer.class),
+                            cc.sbsj.mc.tracesdeath.language.Messages.bundled("zh_CN"));
         }
 
         PlayerInteractAtEntityEvent precise(EquipmentSlot hand) {

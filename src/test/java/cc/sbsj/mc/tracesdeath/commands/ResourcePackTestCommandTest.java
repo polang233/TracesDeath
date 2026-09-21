@@ -11,7 +11,9 @@ class ResourcePackTestCommandTest {
     @Test
     void onlyAuthorizedExplicitRequestsReachTheSender() throws Exception {
         var service = mock(ResourcePackTestService.class);
-        var command = new ResourcePackTestCommand(service);
+        var command =
+                new ResourcePackTestCommand(
+                        service, cc.sbsj.mc.tracesdeath.language.Messages.bundled("zh_CN"));
         var player = mock(Player.class);
         command.execute(player, new String[] {"testpack"});
         verifyNoInteractions(service);

@@ -3,6 +3,7 @@ package cc.sbsj.mc.tracesdeath.core;
 import cc.sbsj.mc.tracesdeath.compat.*;
 import cc.sbsj.mc.tracesdeath.config.*;
 import cc.sbsj.mc.tracesdeath.corpse.CorpseService;
+import cc.sbsj.mc.tracesdeath.language.Messages;
 import cc.sbsj.mc.tracesdeath.resourcepack.ResourcePackTestService;
 import cc.sbsj.mc.tracesdeath.storage.CorpseStore;
 
@@ -22,6 +23,8 @@ public final class PluginRuntime {
     private final CorpseStore store;
     private final ResourcePackTestService packs;
     private CorpseService corpses;
+    private final Messages messages;
+    private final DeathSettings deathSettings;
 
     private PluginRuntime(
             JavaPlugin plugin,
@@ -29,13 +32,17 @@ public final class PluginRuntime {
             CorpseAppearance appearance,
             ServerAdapter adapter,
             CorpseStore store,
-            ResourcePackTestService packs) {
+            ResourcePackTestService packs,
+            Messages messages,
+            DeathSettings deathSettings) {
         this.plugin = plugin;
         this.settings = settings;
         this.appearance = appearance;
         this.adapter = adapter;
         this.store = store;
         this.packs = packs;
+        this.messages = messages;
+        this.deathSettings = deathSettings;
     }
 
     public static PluginRuntime prepare(JavaPlugin plugin) throws Exception {
@@ -56,7 +63,9 @@ public final class PluginRuntime {
                 appearance,
                 adapter,
                 store,
-                new ResourcePackTestService(plugin, textures, version));
+                new ResourcePackTestService(plugin, textures, version),
+                Messages.load(plugin, config.getString("language", "zh_CN")),
+                new DeathSettings(config));
     }
 
     public void start() throws Exception {
@@ -68,7 +77,9 @@ public final class PluginRuntime {
                         settings.isOwnerOnly(),
                         settings.isFillInventory(),
                         appearance,
-                        adapter);
+                        adapter,
+                        messages,
+                        deathSettings);
         corpses.start();
         if (appearance.getType() == CorpseAppearance.CorpseType.TOMBSTONE) {
             try {
@@ -87,6 +98,10 @@ public final class PluginRuntime {
             HandlerList.unregisterAll(plugin);
             Bukkit.getScheduler().cancelTasks(plugin);
         }
+    }
+
+    public Messages getMessages() {
+        return messages;
     }
 
     public CorpseService getCorpses() {
