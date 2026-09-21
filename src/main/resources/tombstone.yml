@@ -1,9 +1,16 @@
-# 选择 config.yml 的 corpse.type: tombstone 后生成并读取。修改后重启生效。
+# 选择 config.yml 的 corpse.type: tombstone 后生成并读取。修改后执行 /td reload 生效。
 # 墓碑与 GUI 素材包含在同一内置资源包，玩家可自行安装。
 tombstone:
-  # 未加载资源包时显示此原版物品，加载后按模型编号显示墓碑。
-  material: STONE
+  # 主体使用石质压力板作为薄底座，装包后显示精细墓碑模型。
+  material: STONE_PRESSURE_PLATE
   custom-model-data: 7310000
+  # 石材展示实体拼出台座、碑身、顶盖和深色碑面；装包后此编号显示为空。
+  fallback-model-data: 7310002
+  # 使用死者保存的皮肤；有无资源包都显示在碑面上。
+  player-head:
+    enabled: true
+    # 原版头颅模型的缩放比例，默认约四分之一格大小。
+    scale: 0.55
 
 gui:
   # 自定义遗体界面上半区；原版按钮和领取操作始终保留。
@@ -25,48 +32,45 @@ gui:
       name: '{default}'
       lore: ['{details}']
       custom-model-data: 0
-    page:
-      material: ARROW
-      name: '{default}'
-      lore: ['{details}']
-      custom-model-data: 0
+    # 7310200 为内置包的透明分隔图标，加载后露出连贯石框。
     divider:
       material: BLACK_STAINED_GLASS_PANE
       name: '{default}'
       lore: ['{details}']
-      custom-model-data: 0
+      custom-model-data: 7310200
     separator:
       material: BLACK_STAINED_GLASS_PANE
       name: '{default}'
       lore: ['{details}']
-      custom-model-data: 0
-    filler:
-      material: BLACK_STAINED_GLASS_PANE
-      name: '{default}'
-      lore: ['{details}']
-      custom-model-data: 0
+      custom-model-data: 7310200
     empty-helmet:
-      material: GRAY_STAINED_GLASS_PANE
+      material: BROWN_STAINED_GLASS_PANE
       name: '{default}'
       lore: ['{details}']
       custom-model-data: 0
     empty-chestplate:
-      material: GRAY_STAINED_GLASS_PANE
+      material: BROWN_STAINED_GLASS_PANE
       name: '{default}'
       lore: ['{details}']
       custom-model-data: 0
     empty-leggings:
-      material: GRAY_STAINED_GLASS_PANE
+      material: BROWN_STAINED_GLASS_PANE
       name: '{default}'
       lore: ['{details}']
       custom-model-data: 0
     empty-boots:
-      material: GRAY_STAINED_GLASS_PANE
+      material: BROWN_STAINED_GLASS_PANE
       name: '{default}'
       lore: ['{details}']
       custom-model-data: 0
     empty-offhand:
-      material: GRAY_STAINED_GLASS_PANE
+      material: BROWN_STAINED_GLASS_PANE
+      name: '{default}'
+      lore: ['{details}']
+      custom-model-data: 0
+
+    empty-mainhand:
+      material: BROWN_STAINED_GLASS_PANE
       name: '{default}'
       lore: ['{details}']
       custom-model-data: 0

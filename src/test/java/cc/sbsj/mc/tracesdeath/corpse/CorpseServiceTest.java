@@ -3,6 +3,8 @@ package cc.sbsj.mc.tracesdeath.corpse;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import cc.sbsj.mc.tracesdeath.storage.CorpseStore;
+
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.PlayerInventory;
@@ -221,14 +223,14 @@ class CorpseServiceTest {
             when(inventory.getContents()).thenReturn(new org.bukkit.inventory.ItemStack[41]);
             when(inventory.getMaxStackSize()).thenReturn(64);
             when(serverAdapter.createCorpseRenderer(any()))
-                    .thenReturn(mock(cc.sbsj.mc.tracesdeath.compat.CorpseRenderer.class));
+                    .thenReturn(mock(cc.sbsj.mc.tracesdeath.entity.CorpseRenderer.class));
             service =
                     new CorpseService(
                             plugin,
                             store,
                             false,
                             false,
-                            cc.sbsj.mc.tracesdeath.appearance.CorpseAppearance.VANILLA,
+                            cc.sbsj.mc.tracesdeath.config.CorpseAppearance.VANILLA,
                             serverAdapter);
         }
     }

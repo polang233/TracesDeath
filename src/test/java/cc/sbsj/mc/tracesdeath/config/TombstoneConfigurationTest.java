@@ -25,11 +25,11 @@ class TombstoneConfigurationTest {
     @Test
     void otherTypesDoNotCreateOrReadTheOptionalFile() throws Exception {
         var plugin = plugin("auto");
-        assertFalse(TombstoneConfiguration.load(plugin).isGuiEnabled());
+        assertFalse(TombstoneConfiguration.load(plugin, plugin.getConfig()).isGuiEnabled());
         assertFalse(Files.exists(directory.resolve("tombstone.yml")));
         Files.writeString(directory.resolve("tombstone.yml"), "invalid: [");
         plugin.getConfig().set("corpse.type", "mannequin");
-        assertFalse(TombstoneConfiguration.load(plugin).isGuiEnabled());
+        assertFalse(TombstoneConfiguration.load(plugin, plugin.getConfig()).isGuiEnabled());
         assertEquals("invalid: [", Files.readString(directory.resolve("tombstone.yml")));
         verify(plugin, never()).saveResource(anyString(), anyBoolean());
     }
@@ -49,13 +49,13 @@ class TombstoneConfigurationTest {
                         })
                 .when(plugin)
                 .saveResource("tombstone.yml", false);
-        assertTrue(TombstoneConfiguration.load(plugin).isGuiEnabled());
+        assertTrue(TombstoneConfiguration.load(plugin, plugin.getConfig()).isGuiEnabled());
         var config =
                 YamlConfiguration.loadConfiguration(directory.resolve("tombstone.yml").toFile());
         config.set("gui.enabled", true);
         config.set("tombstone.custom-model-data", 42);
         config.save(directory.resolve("tombstone.yml").toFile());
-        var settings = TombstoneConfiguration.load(plugin);
+        var settings = TombstoneConfiguration.load(plugin, plugin.getConfig());
         assertTrue(settings.isGuiEnabled());
         assertEquals(42, settings.getTombstoneModelData());
         verify(plugin, times(1)).saveResource("tombstone.yml", false);

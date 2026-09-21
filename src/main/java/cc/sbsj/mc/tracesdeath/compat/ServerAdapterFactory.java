@@ -1,6 +1,7 @@
 package cc.sbsj.mc.tracesdeath.compat;
 
-import cc.sbsj.mc.tracesdeath.resourcepack.CustomTextureSettings;
+import cc.sbsj.mc.tracesdeath.compat.bukkit.BukkitServerAdapter;
+import cc.sbsj.mc.tracesdeath.config.CustomTextureSettings;
 
 public final class ServerAdapterFactory {
     private ServerAdapterFactory() {}
@@ -9,7 +10,7 @@ public final class ServerAdapterFactory {
         if (version.atLeast(1, 19, 4) && present("com.destroystokyo.paper.profile.PlayerProfile")) {
             try {
                 return (ServerAdapter)
-                        Class.forName("cc.sbsj.mc.tracesdeath.compat.PaperServerAdapter")
+                        Class.forName("cc.sbsj.mc.tracesdeath.compat.paper.PaperServerAdapter")
                                 .getConstructor(ServerVersion.class, CustomTextureSettings.class)
                                 .newInstance(version, assets);
             } catch (ReflectiveOperationException exception) {

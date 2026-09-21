@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import cc.sbsj.mc.tracesdeath.compat.ServerVersion;
+import cc.sbsj.mc.tracesdeath.config.CustomTextureSettings;
 
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -49,15 +50,15 @@ class ResourcePackTestServiceTest {
             bukkit.verifyNoInteractions();
             try (var pack =
                     new ZipFile(
-                            directory.resolve("resource-packs/test-tracesdeath.zip").toFile())) {
+                            directory.resolve("resource-packs/TracesDeath.zip").toFile())) {
                 assertNotNull(pack.getEntry("assets/minecraft/font/default.json"));
                 assertNotNull(pack.getEntry("assets/minecraft/items/stone.json"));
             }
             var player = mock(Player.class);
             service.send(player);
             byte[] expected =
-                    Files.readAllBytes(directory.resolve("resource-packs/test-tracesdeath.zip"));
-            String url = "http://127.0.0.1:" + port + "/tracesdeath.zip";
+                    Files.readAllBytes(directory.resolve("resource-packs/TracesDeath.zip"));
+            String url = "http://127.0.0.1:" + port + "/TracesDeath.zip";
             verify(player)
                     .setResourcePack(
                             eq(url),

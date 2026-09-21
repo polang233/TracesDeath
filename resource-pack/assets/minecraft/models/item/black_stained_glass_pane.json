@@ -1,0 +1,20 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "minecraft:block/black_stained_glass"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 7310200
+      },
+      "model": "tracesdeath:blank"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 7310201
+      },
+      "model": "minecraft:item/black_stained_glass_pane_tracesdeath_base"
+    }
+  ]
+}

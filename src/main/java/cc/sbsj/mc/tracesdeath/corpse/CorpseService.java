@@ -1,7 +1,10 @@
 package cc.sbsj.mc.tracesdeath.corpse;
 
-import cc.sbsj.mc.tracesdeath.appearance.CorpseAppearance;
 import cc.sbsj.mc.tracesdeath.compat.ServerAdapter;
+import cc.sbsj.mc.tracesdeath.config.CorpseAppearance;
+import cc.sbsj.mc.tracesdeath.entity.CorpseEntities;
+import cc.sbsj.mc.tracesdeath.gui.CorpseMenu;
+import cc.sbsj.mc.tracesdeath.storage.CorpseStore;
 
 import org.bukkit.*;
 import org.bukkit.entity.Player;

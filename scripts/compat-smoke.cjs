@@ -24,7 +24,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(test,label,timeout=25000){let end=Date.now()+timeout;while(Date.now()<end){if(test())return;await sleep(100);}throw new Error('Timeout: '+label);}
 async function start(){
  output='';boot++;log=fs.createWriteStream(path.join(directory,`boot-${boot}.log`));
- server=spawn(java,['-Xms256m','-Xmx1024m','-Dterminal.jline=false','-Dterminal.ansi=false','-Dfile.encoding=UTF-8','-jar',paper,'nogui'],{cwd:directory,windowsHide:true,stdio:['pipe','pipe','pipe']});
+ server=spawn(java,['-Xms256m','-Xmx1024m','-Dterminal.jline=false','-Dterminal.ansi=false','-Dfile.encoding=UTF-8','-Dstdout.encoding=UTF-8','-Dstderr.encoding=UTF-8','-jar',paper,'nogui'],{cwd:directory,windowsHide:true,stdio:['pipe','pipe','pipe']});
  for(const stream of [server.stdout,server.stderr])stream.on('data',b=>{output+=b.toString();log.write(b);});
  await until(()=>output.includes('Done (')||server.exitCode!==null,'server boot',180000);
  if(server.exitCode!==null)throw new Error(output.slice(-6000));
@@ -53,15 +53,32 @@ async function item(slot,name,count=1){await cmd(legacy?`replaceitem entity Comp
  const dead=once(bot,'death');await cmd('kill CompatBot');await dead;await sleep(2200);
  if(bot.health<=0){bot.respawn();await sleep(1000);}
  await cmd('tp CompatBot 8.5 80 11');await open();
- assert.equal(bot.currentWindow.slots[45]?.name,'diamond');assert.equal(bot.currentWindow.slots[21]?.count,5);
- await click(45,1);await until(()=>!bot.currentWindow.slots[45],'Shift withdrawal');
+ assert.equal(bot.currentWindow.slots[5]?.name,'diamond');assert.equal(bot.currentWindow.slots[21]?.count,5);
+ await click(5,1);await until(()=>bot.currentWindow.slots[5]?.name!=='diamond','Shift withdrawal');
  await click(81,1);assert.equal(bot.currentWindow.slots[45],null,'Shift from player inventory must not deposit');
- await click(6,1);assert.equal(bot.currentWindow.slots[21]?.count,5,'Shift on action button must not claim all');
+ await click(8,1);assert.equal(bot.currentWindow.slots[21]?.count,5,'Shift on action button must not claim all');
  bot.closeWindow(bot.currentWindow);await sleep(350);assert.equal(count('diamond'),12);
+ if(process.env.RELOAD_TEST==='true') {
+  const configPath=path.join(directory,'plugins/TracesDeath/config.yml');
+  const savedConfig=fs.readFileSync(configPath,'utf8');
+  await open();
+  fs.writeFileSync(configPath,'corpse: [broken');
+  await cmd('td reload',600);
+  assert(bot.currentWindow,'invalid configuration keeps existing GUI active');
+  assert.equal(bot.currentWindow.slots[21]?.count,5);
+  fs.writeFileSync(configPath,savedConfig);
+  for(let repeat=0;repeat<3;repeat++) {
+   await cmd('td reload',700); assert.equal(bot.currentWindow,null,'reload closes old GUI');
+   assert.equal(visuals().length,visual==='tombstone'?7:1,'reload creates one complete display group');
+   await open();assert.equal(bot.currentWindow.slots[21]?.count,5);
+  }
+  bot.closeWindow(bot.currentWindow);
+  console.log('PASS reload: invalid config preserves session, repeated reload preserves remaining items');
+ }
  await cmd('save-all flush',1200);await stop(true);
  await start();await connect();await cmd('tp CompatBot 8.5 80 11');await open();
- assert.equal(visuals().length,1,'one visual after forced stop');assert.equal(bot.currentWindow.slots[45],null);
- assert.equal(bot.currentWindow.slots[21]?.count,5);await click(6);
+ assert.equal(visuals().length,visual==='tombstone'?7:1,'complete visual group after forced stop');assert.equal(bot.currentWindow.slots[45],null);
+ assert.equal(bot.currentWindow.slots[21]?.count,5);await click(8);
  await until(()=>!bot.currentWindow&&visuals().length===0,'empty corpse cleanup');
  assert.equal(count('diamond'),12);assert.equal(count('emerald'),5);assert.equal(count('iron_helmet'),1);
  assert(!/UnsupportedClassVersionError|NoClassDefFoundError|NoSuchMethodError/.test(output));

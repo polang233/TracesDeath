@@ -168,24 +168,25 @@ class CorpseItemsTest {
 
     @Test
     void guiMapsEveryPlayerSlotExactlyOnceAndOverflowDoesNotOverlap() {
-        Set<Integer> slots = new HashSet<>();
-        for (int gui = 0; gui < 54; gui++) {
-            int source = CorpseItems.sourceSlot(0, gui);
-            if (source >= 0) assertTrue(slots.add(source));
+        for (int held = 0; held < 9; held++) {
+            Set<Integer> slots = new HashSet<>();
+            for (int gui = 0; gui < 54; gui++) {
+                int source = CorpseItems.sourceSlot(0, gui, held);
+                if (source >= 0) assertTrue(slots.add(source), "duplicate source " + source);
+            }
+            assertEquals(41, slots.size());
+            for (int slot = 0; slot < 41; slot++) assertTrue(slots.contains(slot));
+            assertEquals(held, CorpseItems.sourceSlot(0, 5, held));
+            assertEquals(-1, CorpseItems.sourceSlot(0, 45 + held, held));
+            assertEquals(held, CorpseItems.sourceSlot(1, 5, held));
         }
-        assertEquals(41, slots.size());
-        for (int slot = 0; slot < 41; slot++) assertTrue(slots.contains(slot));
-        assertEquals(39, CorpseItems.sourceSlot(0, 0));
-        assertEquals(40, CorpseItems.sourceSlot(0, 4));
-        assertEquals(0, CorpseItems.sourceSlot(0, 45));
-        assertEquals(41, CorpseItems.sourceSlot(1, 18));
-        assertEquals(77, CorpseItems.sourceSlot(2, 18));
-        for (int slot = 5; slot < 18; slot++) {
-            assertEquals(-1, CorpseItems.sourceSlot(0, slot));
-            assertEquals(-1, CorpseItems.sourceSlot(1, slot));
+        assertEquals(41, CorpseItems.sourceSlot(1, 18, 0));
+        assertEquals(77, CorpseItems.sourceSlot(2, 18, 0));
+        for (int slot = 6; slot < 18; slot++) {
+            assertEquals(-1, CorpseItems.sourceSlot(0, slot, 0));
+            assertEquals(-1, CorpseItems.sourceSlot(1, slot, 0));
         }
-        assertEquals(39, CorpseItems.sourceSlot(1, 0));
-        assertEquals(76, CorpseItems.sourceSlot(1, 53));
+        assertEquals(76, CorpseItems.sourceSlot(1, 53, 0));
         assertEquals(2, CorpseItems.pages(Map.of(76, item(Material.DIAMOND, 1))));
         assertEquals(3, CorpseItems.pages(Map.of(77, item(Material.DIAMOND, 1))));
     }

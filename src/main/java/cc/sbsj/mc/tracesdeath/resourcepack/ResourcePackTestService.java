@@ -1,6 +1,7 @@
 package cc.sbsj.mc.tracesdeath.resourcepack;
 
 import cc.sbsj.mc.tracesdeath.compat.ServerVersion;
+import cc.sbsj.mc.tracesdeath.config.CustomTextureSettings;
 
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -29,7 +30,7 @@ public final class ResourcePackTestService implements AutoCloseable {
     public void exportPacks() throws Exception {
         Path directory = plugin.getDataFolder().toPath().resolve("resource-packs");
         Files.createDirectories(directory);
-        String filename = "tracesdeath.zip";
+        String filename = "TracesDeath.zip";
         byte[] bytes;
         try (InputStream input = plugin.getResource("resource-packs/" + filename)) {
             if (input == null) throw new IOException("内置资源包缺失: " + filename);
@@ -40,7 +41,7 @@ public final class ResourcePackTestService implements AutoCloseable {
             bytes = output.toByteArray();
         }
         archives.put("/" + filename, bytes);
-        Path file = directory.resolve(plugin.getDescription().getVersion() + "-" + filename);
+        Path file = directory.resolve(filename);
         Files.write(file, bytes);
         StringBuilder sha1 = new StringBuilder();
         for (byte value : digest(bytes)) sha1.append(String.format("%02x", value & 255));
@@ -64,7 +65,7 @@ public final class ResourcePackTestService implements AutoCloseable {
             throw new IllegalArgumentException("请在 tombstone.yml 设置有效的 test-server.public-url");
         if (settings.getPort() < 1 || settings.getPort() > 65535)
             throw new IllegalArgumentException("tombstone.yml 的 test-server.port 必须介于 1 和 65535");
-        String filename = "tracesdeath.zip";
+        String filename = "TracesDeath.zip";
         byte[] archive = archives.get("/" + filename);
         if (archive == null) throw new IllegalStateException("内置材质包未成功导出，请查看启动日志");
         if (server == null)

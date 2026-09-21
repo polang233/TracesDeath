@@ -4,24 +4,34 @@ TracesDeath 的主流程是死亡掉落接管、遗体展示、界面领取和�
 
 ## 代码结构与职责
 
+按职责分为 `commands`、`core`、`config`、`corpse`、`gui`、`storage`、`entity`、`compat`、`resourcepack` 和 `hook`。主类负责启动装配和停用清理，各包负责对应业务。
+
 以下路径相对于 `src/main/java/cc/sbsj/mc/tracesdeath/`：
 
-- `TracesDeath`：读取配置、创建服务、注册根命令和处理插件停用。
+- `TracesDeath`：装配运行实例、注册命令与统计，负责启动、重载切换及停用。
+- `core/PluginRuntime`：持有一代配置及其服务、监听、任务和下载服务，统一启动与清理。
+- `commands/ReloadCommand`：检查管理员权限并执行配置重载。
 - `commands/TracesDeathCommand`：分发 `list`、`locate`、`recover`，处理参数、发送者权限、文本输出和补全。
 - `corpse/Corpse`：保存遗体身份、世界与位置、玩家皮肤、死亡时间、物品和待完成领取。
 - `corpse/CorpseItems`：匹配死亡掉落与原始槽位，映射 GUI 槽位，计算领取结果及掉落清单。
 - `corpse/CorpseService`：管理活动记录，串行执行死亡接管、权限与距离检查、领取、恢复和终结。
-- `corpse/CorpseStore`：读取版本化 YAML、刷新临时文件并原子替换，保存失败向调用者报告。
-- `corpse/CorpseEntities`：通过 `CorpseRenderer` 创建展示与点击实体，处理实体事件并修复缺失外观。
-- `appearance/CorpseAppearance`：校验遗体类型、界面材质开关与版本要求。
+- `storage/CorpseStore`：读取版本化 YAML、刷新临时文件并原子替换，保存失败向调用者报告。
+- `entity/CorpseEntities`：通过 `CorpseRenderer` 创建展示与点击实体，处理实体事件并修复缺失外观。
+- `config/CorpseAppearance`：校验遗体类型、界面材质开关与版本要求。
 - `config/PluginSettings`：解析领取权限与领取模式。
 - `config/TombstoneConfiguration`：仅在选择墓碑时创建并读取 `tombstone.yml`，保留已有设置。
-- `resourcepack/CustomTextureSettings`：读取墓碑模型编号、GUI 开关、界面字形和测试地址。
-- `resourcepack/GuiItemSettings`：解析按钮材质、名称、动态 Lore 和模型编号，仅应用于装饰物品。
+- `config/CustomTextureSettings`：读取墓碑模型编号、GUI 开关、界面字形和测试地址。
+- `config/GuiItemSettings`：解析按钮材质、名称、动态 Lore 和模型编号，仅应用于装饰物品。
 - `resourcepack/ResourcePackTestService`：导出内置材质 ZIP，响应手动测试请求并管理下载服务。
-- `commands/ResourcePackTestCommand`：校验权限、模块与目标玩家，调用测试服务。
+- `commands/ResourcePackTestCommand`：校验权限与目标玩家，调用测试服务。
 - `resourcepack/ResourcePackHttpServer`：按固定路径提供内置 ZIP，停用时释放端口与线程。
-- `corpse/CorpseMenu`：渲染库存副本，管理分页和单人查看锁，将领取交给服务。
+- `gui/CorpseMenu`：渲染库存副本，管理分页和单人查看锁，将领取交给服务。
+
+`entity/CorpseRenderer` 定义展示接口。三种实现各自独立：`ChestMinecartRenderer` 位于 `src/main`，`TombstoneRenderer` 位于 `src/display`，`MannequinRenderer` 位于 `src/mannequin`。它们只负责外观生成和更新，实体保护及生命周期由 `CorpseEntities` 统一处理。每个部件生成后必须调用 configure 加入同一 EntityGroup；组内任一部件缺失时整组重建，卸载、重载和取空时移除全部成员。墓碑默认由七个展示部件和一个点击实体组成：主体、四块结构石材、深色碑面和玩家头颅，物品记录仍只有一份。
+
+`compat/bukkit/BukkitServerAdapter` 提供 Bukkit 基础行为，`compat/paper/PaperServerAdapter` 提供 Paper 的界面、皮肤和显示能力。版本判断与反射加载集中在 `ServerAdapterFactory`，GUI 和领取服务使用 `ServerAdapter` 接口。
+
+`hook/Metrics` 保存 bStats 官方单文件实现，服务 ID 为 34148。主类负责启用和关闭统计；新增第三方集成按具体服务放入 `hook`。
 
 命令和界面都通过 `CorpseService` 改变库存。物品计算集中在 `CorpseItems`，文件读写集中在 `CorpseStore`，实体装备只用于展示。
 
@@ -58,7 +68,7 @@ TracesDeath 的主流程是死亡掉落接管、遗体展示、界面领取和�
 
 `CorpseItems` 先计算目标库存，再由 `CorpseService` 保存 `PendingClaim`。记录包含领取者、库存范围、领取前后快照、遗体剩余物品、计划掉落物和 `drops-started`。
 
-单格领取与 Shift 领取按背包实际空间扣减；玩家背包区域和操作按钮上的 Shift 不执行转移。装备占顶栏 0–4，5 为隔断，6 为领取，7 为信息，8 为翻页，9–17 为横向分隔。`loot.claim-all-mode: restore_slots` 时，一键领取恢复原槽位，将被替换的玩家物品列入掉落清单；`fill_inventory` 时收入背包，将溢出的遗体物品列入清单。额外掉落在恢复原槽位后尝试收入背包。
+单格领取与 Shift 领取按背包实际空间扣减；玩家背包区域和操作按钮上的 Shift 不执行转移。装备占顶栏 0–4，5 为主手，6 为隔断，7 为信息，8 为拾取，9–17 为横向分隔。主手映射至 heldSlot，原快捷栏对应格不映射来源，保证每个库存槽只展示一次。信息按钮右键循环额外掉落页。`loot.claim-all-mode: restore_slots` 时，一键拾取恢复原槽位，将被替换的玩家物品列入掉落清单；`fill_inventory` 时收入背包，将溢出的遗体物品列入清单。额外掉落在恢复原槽位后尝试收入背包。
 
 保存领取计划成功后才修改玩家库存并调用玩家保存。若有地面掉落，先持久化 `drops-started` 再生成物品，最后提交遗体结果。界面关闭后同步最终玩家库存。
 
@@ -80,7 +90,7 @@ TracesDeath 的主流程是死亡掉落接管、遗体展示、界面领取和�
 
 界面布局扩展接入 `CorpseMenu`，物品格到来源格的关系集中维护在 `CorpseItems.sourceSlot` 与 `pages`。装饰和操作按钮不能占用真实物品的来源编号。新增筛选或多界面时，让页面保存查看状态、服务保存库存状态。
 
-`config.yml` 管理遗体类型与领取规则。选择墓碑后，`tombstone.yml` 管理模型、自定义 GUI 和测试地址；其他类型不访问该文件。入口校验后向服务传入解析结果。支持重载前需要定义打开的会话和待完成领取如何处理。
+`config.yml` 管理遗体类型与领取规则。选择墓碑后，`tombstone.yml` 管理模型、自定义 GUI 和测试地址；其他类型不访问该文件。入口校验后向服务传入解析结果。`/td reload` 先严格解析 YAML、检查配置与版本、验证遗体文件，再关闭当前界面、取消旧任务与监听并重建服务。准备阶段失败保留现有实例；启用阶段失败则按旧配置从已保存记录恢复，回退也失败时停用插件并保留记录。bStats 实例跨配置重载保留。客户端资源包需自行重新加载或手动测试发送。
 
 ### 玩法规则与生命周期
 
@@ -92,7 +102,7 @@ TracesDeath 的主流程是死亡掉落接管、遗体展示、界面领取和�
 
 ### 资源包模块
 
-构建把 GUI 背景、字体、墓碑模型与纹理打入同一资源包。资源包统一采用 Minecraft 1.20+ 格式。GUI 与墓碑的开关及渲染逻辑分别管理，普通 Gradle 构建直接使用已检入素材。
+构建把 GUI 背景、字体、墓碑模型与纹理打入同一资源包。资源包统一采用 Minecraft 1.20+ 格式。GUI 与墓碑的开关及渲染逻辑分别管理，普通 Gradle 构建直接使用已检入素材。默认 GUI 原画位于 `resource-pack/source/corpse-panel.png`；`scripts/export-gui-texture.ps1` 将完整底图等比例导出为 176×138 逻辑尺寸的 4 倍精度纹理，物品与文字由游戏动态绘制。
 
 `TombstoneConfiguration` 根据所选类型决定是否读取专用文件，`CustomTextureSettings` 保存解析结果。墓碑模式可通过 `gui.enabled` 启用自定义 GUI。按钮始终为原版物品，墓碑通过 CustomModelData 指向模型。客户端资源决定最终显示，领取流程与材质状态无关。
 

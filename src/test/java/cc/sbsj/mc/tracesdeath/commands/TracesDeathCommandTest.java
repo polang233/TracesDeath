@@ -22,7 +22,8 @@ class TracesDeathCommandTest {
         CorpseService service = mock(CorpseService.class);
         Player player = mock(Player.class);
         when(player.hasPermission("tracesdeath.admin")).thenReturn(true);
-        new TracesDeathCommand(service, mock(ResourcePackTestCommand.class))
+        new TracesDeathCommand(
+                        service, mock(ResourcePackTestCommand.class), mock(ReloadCommand.class))
                 .onCommand(
                         player,
                         null,
@@ -37,7 +38,8 @@ class TracesDeathCommandTest {
         ConsoleCommandSender console = mock(ConsoleCommandSender.class);
         UUID id = UUID.randomUUID();
         TracesDeathCommand command =
-                new TracesDeathCommand(service, mock(ResourcePackTestCommand.class));
+                new TracesDeathCommand(
+                        service, mock(ResourcePackTestCommand.class), mock(ReloadCommand.class));
         command.onCommand(
                 console, null, "td", new String[] {"recover", id.toString(), "delivered"});
         verify(service).resolveClaim(id, true);
@@ -50,7 +52,8 @@ class TracesDeathCommandTest {
     void invalidRecoveryOutcomeDoesNotChangeState() {
         CorpseService service = mock(CorpseService.class);
         ConsoleCommandSender console = mock(ConsoleCommandSender.class);
-        new TracesDeathCommand(service, mock(ResourcePackTestCommand.class))
+        new TracesDeathCommand(
+                        service, mock(ResourcePackTestCommand.class), mock(ReloadCommand.class))
                 .onCommand(
                         console,
                         null,
@@ -70,7 +73,8 @@ class TracesDeathCommandTest {
         Corpse other = corpse(UUID.randomUUID());
         when(service.getAll()).thenReturn(List.of(own, other));
         TracesDeathCommand command =
-                new TracesDeathCommand(service, mock(ResourcePackTestCommand.class));
+                new TracesDeathCommand(
+                        service, mock(ResourcePackTestCommand.class), mock(ReloadCommand.class));
         try (var ignored = mockStatic(Bukkit.class)) {
             assertTrue(command.onCommand(player, null, "td", new String[0]));
             verify(player).sendMessage(contains(own.id.toString()));

@@ -1,7 +1,8 @@
 package cc.sbsj.mc.tracesdeath.compat;
 
-import cc.sbsj.mc.tracesdeath.appearance.CorpseAppearance;
+import cc.sbsj.mc.tracesdeath.config.CorpseAppearance;
 import cc.sbsj.mc.tracesdeath.corpse.SkinProperty;
+import cc.sbsj.mc.tracesdeath.entity.CorpseRenderer;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;

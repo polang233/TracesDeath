@@ -12,6 +12,18 @@
         "custom_model_data": 7310001
       },
       "model": "minecraft:item/stone_tracesdeath_base"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 7310002
+      },
+      "model": "tracesdeath:blank"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 7310003
+      },
+      "model": "minecraft:item/stone_tracesdeath_base"
     }
   ]
 }

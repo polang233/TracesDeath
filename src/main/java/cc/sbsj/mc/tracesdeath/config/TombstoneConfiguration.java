@@ -1,7 +1,5 @@
 package cc.sbsj.mc.tracesdeath.config;
 
-import cc.sbsj.mc.tracesdeath.resourcepack.CustomTextureSettings;
-
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -11,8 +9,10 @@ import java.io.File;
 public final class TombstoneConfiguration {
     private TombstoneConfiguration() {}
 
-    public static CustomTextureSettings load(JavaPlugin plugin) throws Exception {
-        String type = plugin.getConfig().getString("corpse.type", "auto").trim();
+    public static CustomTextureSettings load(
+            JavaPlugin plugin, org.bukkit.configuration.ConfigurationSection mainConfig)
+            throws Exception {
+        String type = mainConfig.getString("corpse.type", "auto").trim();
         if (!"tombstone".equalsIgnoreCase(type)) {
             YamlConfiguration defaults = new YamlConfiguration();
             defaults.set("gui.enabled", false);

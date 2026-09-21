@@ -14,7 +14,7 @@ corpse:
 - `tombstone`：Paper 1.19.4+，需要客户端加载资源包。
 - `chest_minecart`：Bukkit/Spigot/Paper 1.12+，使用矿车本体交互。
 
-同一 JAR 包含各版本实现。Java 版本遵循服务端要求；显式选择不支持的类型时，插件停止启用并输出原因。切换外观后完整重启，已有遗体也会使用所选类型。
+同一 JAR 包含各版本实现。Java 版本遵循服务端要求；显式选择不支持的类型时，插件停止启用并输出原因。切换外观后执行 `/td reload`，已有遗体也会使用所选类型。
 
 ## Mannequin 玩家模型
 
@@ -26,13 +26,13 @@ corpse:
 - 设置无敌并取消伤害事件；装备为视觉副本，异常死亡和移除时清空装备掉落。
 - 右键打开遗体界面，领取后同步装备外观。
 
-实现位于 `src/mannequin` 中的 `MannequinRenderer`。
+实现位于 `src/mannequin` 中的 `entity/MannequinRenderer`。
 
 ## 资源包墓碑
 
-由 ItemDisplay 展示 `tracesdeath:tombstone` 模型，Interaction 提供宽 1、高 1.5 的点击范围。模型包含石座、苔藓石碑与双面石饰，约 1.44 格高。
+默认由七个 ItemDisplay 组成墓碑，Interaction 提供宽 1、高 1.5 的共用点击范围。主体为石质压力板底座，另四块石材经独立缩放和位移组成下层台座、上层台座、碑身和顶盖，总高约 1.45 格。下层台座和碑身使用苔石砖，上层台座与顶盖保留石材，形成风化层次。正面增加磨制黑石碑面和缩小的死者头颅；头颅读取遗体保存的皮肤属性，缺少皮肤数据时使用原版默认头像。未加载资源包时直接显示这个原版石材轮廓；加载配套资源包后，主体显示暖色砂岩、深棕碑框、铜绿风化与几何刻纹的精细墓碑，五个石材辅助部件显示为空，玩家头颅保留。
 
-展示实体关闭重力、设为无敌，不具备原生库存。真实物品保存在遗体记录中。实现位于 `src/display` 中的 `PaperServerAdapter`。
+展示实体关闭重力、设为无敌，不具备原生库存。真实物品保存在遗体记录中。实现位于 `src/display` 中的 `entity/TombstoneRenderer`。
 
 ## 兼容性箱子矿车
 
@@ -43,7 +43,7 @@ corpse:
 - 禁止打开原生容器与漏斗转移，原生库存保持为空。
 - 直接使用矿车本体接收交互，适用于没有 Interaction 的版本。
 
-实现位于 `BukkitServerAdapter.MinecartRenderer`，事件保护集中在 `CorpseEntities`。
+实现位于 `entity/ChestMinecartRenderer`，事件保护集中在 `CorpseEntities`。
 
 ## 保护与生命周期
 
@@ -57,12 +57,16 @@ corpse:
 
 ## 资源包与界面
 
-在 `config.yml` 中选择 `corpse.type: tombstone` 并重启，插件会首次生成 `tombstone.yml`：
+在 `config.yml` 中选择 `corpse.type: tombstone` 并执行 `/td reload`，插件会首次生成 `tombstone.yml`：
 
 ```yaml
 tombstone:
-  material: STONE
+  material: STONE_PRESSURE_PLATE
   custom-model-data: 7310000
+  fallback-model-data: 7310002
+  player-head:
+    enabled: true
+    scale: 0.55
 gui:
   enabled: true
   title-prefix: '‹◆›'
@@ -70,37 +74,39 @@ gui:
 
 墓碑模式直接使用文件中的模型配置，`gui.enabled` 控制该模式的自定义界面。其他类型使用原版界面，不生成或读取 `tombstone.yml`；切换类型会保留已有文件，再次启用墓碑时继续使用其中的设置。
 
-玩家的显示由本地资源包决定。墓碑未装包时显示承载物品，装包后显示自定义模型；GUI 始终保留箱子、时钟、玻璃板等原版按钮与领取功能，装包后显示上半区背景。插件不依赖客户端加载状态进行切换。
+玩家的显示由本地资源包决定。墓碑未装包时显示石材组合轮廓，装包后显示精细模型；GUI 始终保留箱子、时钟、玻璃板等原版按钮与领取功能，装包后显示上半区背景。插件不依赖客户端加载状态进行切换。
 
 ### 安装与合并
 
-启用墓碑模式后，在 `plugins/TracesDeath/resource-packs/` 导出带插件版本号的组合包与 SHA-1。`tracesdeath.zip` 统一采用 1.20+ 格式，包含 GUI 与墓碑素材。
+启用墓碑模式后，在 `plugins/TracesDeath/resource-packs/` 导出 `TracesDeath.zip` 与 SHA-1，资源包描述显示作者与插件版本。资源包 统一采用 1.20+ 格式，包含 GUI 与墓碑素材。
 
-Release 同时提供插件 JAR 与资源包 ZIP。玩家把资源包 ZIP 放到客户端 `.minecraft/resourcepacks/`，在游戏“选项 → 资源包”中启用，使用默认墓碑配置即可显示模型与 GUI。服主也可合并到已有资源包。合并 GUI 时保留 `assets/minecraft/font/default.json` 的三个字形定义；合并墓碑时保留 `assets/tracesdeath` 中的墓碑素材及石头的模型分派，和已有分派规则一起合并。资源包格式以目标客户端为准。
+Release 同时提供插件 JAR 与资源包 ZIP。玩家把资源包 ZIP 放到客户端 `.minecraft/resourcepacks/`，在游戏“选项 → 资源包”中启用，使用默认墓碑配置即可显示模型与 GUI。服主也可合并到已有资源包。合并 GUI 时保留 `assets/minecraft/font/default.json` 的三个字形定义；合并墓碑时保留 `assets/tracesdeath` 中的墓碑与透明模型素材，以及石质压力板、石头、苔石砖和磨制黑石的模型分派，和已有分派规则一起合并。资源包格式以目标客户端为准。
 
 ### 自定义引用
 
-`tombstone.material` 是承载物品，`tombstone.custom-model-data` 是模型编号，默认 `STONE` / `7310000`。配置和 ZIP 中分派的物品、编号需要一致；修改配置不会改写材质文件。服务器只设置 CustomModelData，客户端加载资源后解释对应模型。
+`tombstone.material` 是承载物品，`tombstone.custom-model-data` 是模型编号，默认 `STONE_PRESSURE_PLATE` / `7310000`。头颅默认开启，可通过 `tombstone.player-head.enabled` 关闭，通过 `scale` 调整大小。辅助石材使用 `fallback-model-data: 7310002`，在配套包内映射为空模型。已有配置若仍使用 `STONE`，请将主体材质改为 `STONE_PRESSURE_PLATE`。配置和 ZIP 中分派的物品、编号需要一致；修改配置不会改写材质文件。服务器只设置 CustomModelData，客户端加载资源后解释对应模型。
 
 `gui.title-prefix` 默认使用 `‹◆›`：内置包分别赋予左移、面板、回移效果，字体为 `minecraft:default`。未加载时它们是普通标题装饰字符。替换自己的背景时同步维护图片尺寸、字形和间距；该字体映射也会影响其他文本里的相同字形。
 
-界面仍为 54 格容器，顶部为五个装备槽、隔断、领取、信息和翻页。背景图片不会改变点击位置，下方玩家背包保持原版。
+默认背景采用连贯苔石框、贯穿竖向分隔与横梁的裂纹、底部方形青蓝宝石。标题增加左侧留白，快捷栏上方使用连续粗分隔；长名字在标题中省略显示，完整名字保留在信息按钮。
+
+界面仍为 54 格容器，顶部为头盔、胸甲、护腿、靴子、副手、主手六格，其后为隔断、信息和一键拾取。主手只在顶栏显示，原快捷栏位置留空，原槽位恢复关系保留。信息按钮左键显示详情，有额外掉落时右键循环翻页。背景图片不会改变点击位置，下方玩家背包保持原版。
 
 ### GUI 物品配置
 
-`tombstone.yml` 的 `gui.items` 可分别设置 `claim`、`info`、`page`、`divider`、`separator`、`filler` 和五种 `empty-*` 装备占位物品。默认使用原版图标，配置只作用于按钮和装饰，不改变遗物与操作槽位。
+`tombstone.yml` 的 `gui.items` 可分别设置 `claim`、`info`、`divider`、`separator` 和六种 `empty-*` 装备／手持占位物品。默认使用原版图标，配置只作用于按钮和装饰，不改变遗物与操作槽位。
 
 ```yaml
 gui:
   items:
     claim:
       material: CHEST
-      name: '&a一键领取'
+      name: '&a一键拾取'
       lore: ['{details}', '&7点击领取']
       custom-model-data: 0
 ```
 
-`{default}` 保留原名称，翻页按钮会保留当前页数；Lore 中单独一行 `{details}` 展开原有动态说明，信息按钮会保留死亡者、时间与位置。设为空列表可隐藏说明。名称与 Lore 支持 `&` 颜色代码。CustomModelData 为 0 时保留原版图标，自定义编号需与自行修改的资源包模型对应。
+`{default}` 保留原名称，Lore 中单独一行 `{details}` 展开原有动态说明，信息按钮会保留死亡者、时间与位置。设为空列表可隐藏说明。名称与 Lore 支持 `&` 颜色代码。CustomModelData 为 0 时保留原版图标。内置编号 7310200 用于黑色玻璃分隔板：装包后透明显示，让裂纹石框连贯；未装包时保留原版玻璃。其他编号需与自己的模型对应。
 
 ### 手动测试命令
 

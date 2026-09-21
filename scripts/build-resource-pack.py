@@ -48,17 +48,43 @@ def write_json(path, data):
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
 
-def texture(name, palette, seed, moss=False):
+def texture(name, palette, seed, moss=False, carved=False, plaque=False):
+    # Warm sandstone, bronze-brown plaque and restrained verdigris weathering.
     rng = random.Random(seed)
-    image = Canvas(16, 16, (*palette[0], 255))
-    for y in range(16):
-        for x in range(16):
+    image = Canvas(32, 32, (*palette[0], 255))
+    for y in range(32):
+        for x in range(32):
             image.rect(x, y, 1, 1, rng.choice(palette))
+    if plaque:
+        image.bevel(1,1,30,30,(67,49,37),(181,145,87),(36,28,24))
+        image.bevel(3,3,26,26,(77,58,43),(45,33,26),(133,105,68))
+        # Chiseled abstract ornaments stay outside the central player-head area.
+        for x,y,w,h in [(6,6,7,1),(6,6,1,5),(19,6,7,1),(25,6,1,5),
+                        (7,25,5,1),(14,24,4,1),(21,25,4,1)]:
+            image.rect(x,y,w,h,(38,28,23));image.rect(x,y+1,w,1,(150,118,76))
+        image.rect(14,5,4,2,(190,151,90))
+    else:
+        # Fine, stepped fractures with one-pixel chipped highlights.
+        for points in [[(8,0),(8,3),(9,4),(10,5),(10,8),(11,9),(12,10)],
+                       [(27,19),(26,20),(26,23),(25,24),(23,25),(23,28),(22,29),(22,31)]]:
+            for x,y in points:
+                image.rect(x,y,1,2,(136,114,82));image.rect(x+1,y,1,1,(239,222,184))
+        for _ in range(9):
+            x,y=rng.randrange(3,29),rng.randrange(3,29)
+            image.rect(x,y,2,1,(230,211,172));image.rect(x+1,y+1,1,1,(174,151,113))
+        if carved:
+            # A shallow geometric border unlike a normal stone/stone-brick block.
+            image.rect(1,2,30,1,(242,226,191));image.rect(1,3,30,1,(146,120,83))
+            image.rect(1,28,30,1,(146,120,83));image.rect(1,29,30,1,(226,207,164))
+            for x in range(4,29,8):
+                image.rect(x,8,4,1,(146,120,83));image.rect(x,9,1,5,(146,120,83))
+                image.rect(x+1,13,3,1,(146,120,83));image.rect(x+2,10,1,3,(237,218,177))
     if moss:
-        for x, y, w, h in [(0,0,7,2),(0,2,3,5),(2,5,3,3),(12,12,4,4),(10,14,3,2)]:
-            image.rect(x,y,w,h,(91,113,49))
-        image.rect(1,1,4,1,(130,150,68))
-        image.rect(12,13,2,1,(123,145,63))
+        for x,y,radius in [(2,3,4),(28,29,4)]:
+            for yy in range(max(0,y-radius),min(32,y+radius+1)):
+                for xx in range(max(0,x-radius),min(32,x+radius+1)):
+                    if abs(xx-x)+abs(yy-y)<radius+rng.randrange(-2,3) and rng.random()<.65:
+                        image.rect(xx,yy,1,1,rng.choice([(62,107,91),(80,127,108),(117,153,128)]))
     image.save(ASSETS/'textures'/'block'/f'{name}.png')
 
 
@@ -69,22 +95,17 @@ def box(start, end, texture_name):
 
 
 def build_model():
-    texture('stone',[(111,116,113),(120,125,121),(128,132,126),(115,121,116)],3)
-    texture('mossy_stone',[(112,117,112),(126,130,120),(118,123,115)],4,True)
-    texture('plaque',[(52,62,62),(58,69,68),(64,75,72)],5)
-    emblem=Canvas(16,16,(18,104,115,255))
-    emblem.bevel(1,1,14,14,(42,182,186),(130,239,220),(18,111,132))
-    emblem.rect(4,3,4,3,(212,255,241))
-    emblem.rect(9,10,4,3,(24,146,159))
-    emblem.save(ASSETS/'textures/block/emblem.png')
+    texture('stone',[(207,190,155),(214,198,164),(220,205,174),(210,194,160)],3,carved=True)
+    texture('mossy_stone',[(205,187,150),(213,196,161),(218,202,169)],4,True)
+    texture('plaque',[(66,47,34),(74,55,40),(82,62,46)],5,plaque=True)
     elements=[box([1,0,1],[15,2,15],'moss'),box([2,2,3],[14,4,13],'stone'),
               box([3,4,6],[13,19,10],'moss'),box([4,19,6],[12,22,10],'stone'),
               box([5,22,6],[11,23,10],'stone'),
-              box([5,8,5.75],[11,16,6],'plaque'),box([7,11,5.5],[9,13,5.75],'emblem'),
-              box([5,8,10],[11,16,10.25],'plaque'),box([7,11,10.25],[9,13,10.5],'emblem')]
+              box([4.5,8,5.5],[11.5,18,6],'plaque'),
+              box([5,8,10],[11,16,10.25],'plaque')]
     write_json(ASSETS/'models/tombstone.json',{
         'textures':{'stone':'tracesdeath:block/stone','moss':'tracesdeath:block/mossy_stone',
-                    'plaque':'tracesdeath:block/plaque','emblem':'tracesdeath:block/emblem',
+                    'plaque':'tracesdeath:block/plaque',
                     'particle':'tracesdeath:block/stone'},
         'gui_light':'side','elements':elements,
         'display':{'gui':{'rotation':[30,225,0],'translation':[0,-2,0],'scale':[.6,.6,.6]}}})
@@ -92,47 +113,23 @@ def build_model():
 
 
 def build_panel():
-    # Only the corpse panel and the inventory-label band are drawn. Player slots begin at y=140.
-    image=Canvas(176,138,(78,81,76,255))
-    image.bevel(1,1,174,136,(143,147,139),(206,210,198),(40,45,39))
-    image.bevel(3,3,170,132,(161,164,154),(184,191,177),(70,77,65))
-    image.rect(6,5,164,10,(73,80,71))
-    rng=random.Random(29)
-    for _ in range(200):
-        x=rng.choice([rng.randrange(0,6),rng.randrange(170,176)])
-        y=rng.randrange(0,125)
-        image.rect(x,y,rng.randrange(1,3),rng.randrange(1,4),rng.choice([(90,101,79),(102,116,75),(143,153,119),(58,70,52)]))
-    for x,y in [(22,1),(46,2),(97,0),(131,3),(169,16),(2,64),(172,89)]:
-        image.rect(x,y,2,4,(44,51,43));image.rect(x+2,y+3,3,1,(44,51,43));image.rect(x+4,y+4,1,3,(44,51,43))
-    for slot in range(9):
-        image.bevel(7+slot*18,17,18,18,(139,139,139),(58,64,55),(222,228,213))
-    # Worn stone separator with shallow carved marks, moss at the rim.
-    image.bevel(6,36,164,17,(100,109,91),(172,181,155),(48,62,43))
-    image.rect(9,39,158,1,(64,77,54));image.rect(9,49,158,1,(169,178,149))
-    for x in range(15,160,23):
-        image.rect(x,42,7,2,(71,82,61));image.rect(x+3,41,1,5,(71,82,61));image.rect(x+1,45,5,1,(129,139,113))
-    for x,y,w,h in [(8,37,13,2),(20,38,5,3),(153,48,12,3),(146,49,8,2),(3,119,4,10),(168,122,5,9)]:
-        image.rect(x,y,w,h,(89,108,58))
-    for y in [54,72,90,108]:
-        for col in range(9):
-            image.bevel(7+col*18,y-1,18,18,(139,139,139),(62,67,59),(232,234,220))
-    # A thicker lower rim under the corpse hotbar; the native inventory label remains readable.
-    image.bevel(6,125,164,12,(193,196,182),(223,227,209),(75,86,64))
-    image.rect(9,126,155,1,(139,153,114))
-    image.rect(162,130,5,3,(106,125,75));image.rect(166,132,3,3,(79,99,52))
-    image.rect(2,135,172,2,(86,100,70))
-    image.save(ASSETS/'textures/font/corpse_panel.png')
+    # Artwork is exported from the approved source via export-gui-texture.ps1.
+    texture=ASSETS/'textures/font/corpse_panel.png'
+    assert texture.is_file(), 'Run scripts/export-gui-texture.ps1 first'
+    assert struct.unpack('!II',texture.read_bytes()[16:24])==(704,552)
     write_json(PACK/'assets/minecraft/font/default.json',{'providers':[
         {'type':'space','advances':{'‹':-8,'›':-169}},
         {'type':'bitmap','file':'tracesdeath:font/corpse_panel.png','ascent':13,'height':138,'chars':['◆']}
     ]})
-    return image
 
 
 def legacy_models():
     minecraft=PACK/'assets/minecraft'
     for carrier,entries,base in [
-        ('stone',[(7310000,'tracesdeath:tombstone')],{'parent':'minecraft:block/stone'})
+        ('stone',[(7310000,'tracesdeath:tombstone'),(7310002,'tracesdeath:blank')],{'parent':'minecraft:block/stone'}),
+        ('stone_pressure_plate',[(7310000,'tracesdeath:tombstone')],{'parent':'minecraft:block/stone_pressure_plate'}),
+        ('polished_blackstone',[(7310002,'tracesdeath:blank')],{'parent':'minecraft:block/polished_blackstone'}),
+        ('mossy_stone_bricks',[(7310002,'tracesdeath:blank')],{'parent':'minecraft:block/mossy_stone_bricks'})
     ]:
         overrides=[];modern=[]
         for value,model in entries:
@@ -146,8 +143,21 @@ def legacy_models():
             'entries':modern,'fallback':{'type':'minecraft:model','model':'minecraft:item/'+carrier+'_tracesdeath_base'}}})
 
 
-def preview_panel(panel):
-    panel.save(PACK/'previews/upper-panel.png',4)
+def build_separator():
+    # Vanilla panes remain visible without the pack; the reserved model is transparent with it.
+    Canvas(16,16).save(ASSETS/'textures/item/blank.png')
+    write_json(ASSETS/'models/blank.json',{'parent':'minecraft:item/generated','textures':{'layer0':'tracesdeath:item/blank'}})
+    carrier='black_stained_glass_pane'
+    base={'parent':'minecraft:item/generated','textures':{'layer0':'minecraft:block/black_stained_glass'}}
+    root=PACK/'assets/minecraft'
+    write_json(root/f'models/item/{carrier}_tracesdeath_base.json',base)
+    fallback='minecraft:item/'+carrier+'_tracesdeath_base'
+    write_json(root/f'models/item/{carrier}.json',{**base,'overrides':[
+        {'predicate':{'custom_model_data':7310200},'model':'tracesdeath:blank'},
+        {'predicate':{'custom_model_data':7310201},'model':fallback}]})
+    write_json(root/f'items/{carrier}.json',{'model':{'type':'minecraft:range_dispatch','property':'minecraft:custom_model_data','index':0,
+        'entries':[{'threshold':7310200,'model':{'type':'minecraft:empty'}},{'threshold':7310201,'model':{'type':'minecraft:model','model':fallback}}],
+        'fallback':{'type':'minecraft:model','model':fallback}}})
 
 
 def verify():
@@ -161,17 +171,18 @@ def verify():
             assert (ASSETS/'models'/(data['model']['model'].split(':',1)[1]+'.json')).is_file(), file
     for file in ASSETS.rglob('*.png'):
         assert file.read_bytes().startswith(b'\x89PNG\r\n\x1a\n'), file
-    allowed={'models/item/stone.json','models/item/stone_tracesdeath_base.json','items/stone.json','font/default.json'}
+    allowed={'models/item/stone.json','models/item/stone_tracesdeath_base.json','items/stone.json','font/default.json','models/item/black_stained_glass_pane.json','models/item/black_stained_glass_pane_tracesdeath_base.json','items/black_stained_glass_pane.json','models/item/stone_pressure_plate.json','models/item/stone_pressure_plate_tracesdeath_base.json','items/stone_pressure_plate.json','models/item/polished_blackstone.json','models/item/polished_blackstone_tracesdeath_base.json','items/polished_blackstone.json','models/item/mossy_stone_bricks.json','models/item/mossy_stone_bricks_tracesdeath_base.json','items/mossy_stone_bricks.json'}
     assert {str(p.relative_to(PACK/'assets/minecraft')).replace('\\','/') for p in (PACK/'assets/minecraft').rglob('*.json')}==allowed
 
 
 def main():
-    write_json(PACK/'pack.mcmeta',{'pack':{'description':'TracesDeath · 墓碑与原版风格遗体界面',
+    version=next(line.split('=',1)[1].strip() for line in (ROOT/'gradle.properties').read_text(encoding='utf-8').splitlines() if line.startswith('version='))
+    write_json(PACK/'pack.mcmeta',{'pack':{'description':f'作者：Polang | 版本：{version}\n墓碑专用材质与遗体界面装饰',
         'pack_format':15,'supported_formats':{'min_inclusive':15,'max_inclusive':88},'min_format':15,'max_format':88}})
-    build_model();panel=build_panel();legacy_models();preview_panel(panel)
+    build_model();build_panel();legacy_models();build_separator()
     shutil.copyfile(ROOT/'assets/logo-memorial-128.png', PACK/'pack.png')
     verify()
-    output=ROOT/'build/resource-pack/TracesDeath-Prototype.zip'
+    output=ROOT/'build/resource-pack/TracesDeath.zip'
     output.parent.mkdir(parents=True,exist_ok=True)
     paths=[PACK/'pack.mcmeta',PACK/'pack.png',*sorted((PACK/'assets').rglob('*'))]
     with zipfile.ZipFile(output,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as archive:

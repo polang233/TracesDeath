@@ -17,6 +17,20 @@
           "type": "minecraft:model",
           "model": "minecraft:item/stone_tracesdeath_base"
         }
+      },
+      {
+        "threshold": 7310002,
+        "model": {
+          "type": "minecraft:model",
+          "model": "tracesdeath:blank"
+        }
+      },
+      {
+        "threshold": 7310003,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/stone_tracesdeath_base"
+        }
       }
     ],
     "fallback": {

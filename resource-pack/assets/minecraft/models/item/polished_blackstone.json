@@ -1,0 +1,17 @@
+{
+  "parent": "minecraft:block/polished_blackstone",
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 7310002
+      },
+      "model": "tracesdeath:blank"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 7310003
+      },
+      "model": "minecraft:item/polished_blackstone_tracesdeath_base"
+    }
+  ]
+}

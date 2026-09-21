@@ -140,13 +140,15 @@ public final class CorpseItems {
     }
 
     /** Fixed GUI mapping; empty source slots stay empty. */
-    public static int sourceSlot(int page, int guiSlot) {
+    public static int sourceSlot(int page, int guiSlot, int heldSlot) {
         if (guiSlot >= 0 && guiSlot < 4) return 39 - guiSlot;
         if (guiSlot == 4) return 40;
+        if (guiSlot == 5) return heldSlot;
         if (guiSlot < 18 || guiSlot >= 54) return -1;
         if (page > 0) return 41 + (page - 1) * 36 + guiSlot - 18;
         if (guiSlot < 45) return guiSlot - 9;
-        return guiSlot - 45;
+        int hotbarSlot = guiSlot - 45;
+        return hotbarSlot == heldSlot ? -1 : hotbarSlot;
     }
 
     public static int pages(Map<Integer, ItemStack> items) {

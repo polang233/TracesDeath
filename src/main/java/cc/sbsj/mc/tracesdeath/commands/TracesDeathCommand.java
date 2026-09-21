@@ -23,9 +23,12 @@ import java.util.stream.Collectors;
 public final class TracesDeathCommand implements CommandExecutor, TabCompleter {
     private final CorpseService service;
     private final ResourcePackTestCommand resourcePackTest;
+    private final ReloadCommand reload;
 
-    public TracesDeathCommand(CorpseService service, ResourcePackTestCommand resourcePackTest) {
+    public TracesDeathCommand(
+            CorpseService service, ResourcePackTestCommand resourcePackTest, ReloadCommand reload) {
         this.resourcePackTest = resourcePackTest;
+        this.reload = reload;
         this.service = service;
     }
 
@@ -39,6 +42,9 @@ public final class TracesDeathCommand implements CommandExecutor, TabCompleter {
             case "locate":
                 if (sender instanceof Player) locate((Player) sender);
                 else help(sender);
+                break;
+            case "reload":
+                reload.execute(sender, args);
                 break;
             case "testpack":
                 resourcePackTest.execute(sender, args);
@@ -96,7 +102,8 @@ public final class TracesDeathCommand implements CommandExecutor, TabCompleter {
 
     private void help(CommandSender sender) {
         sender.sendMessage("/td list | /td locate");
-        if (sender.hasPermission("tracesdeath.admin")) sender.sendMessage("/td testpack [玩家]");
+        if (sender.hasPermission("tracesdeath.admin"))
+            sender.sendMessage("/td reload | /td testpack [玩家]");
         if (sender instanceof ConsoleCommandSender) {
             sender.sendMessage("/td recover <ID> <delivered|not-delivered>（核对物品后使用）");
         }
@@ -118,7 +125,7 @@ public final class TracesDeathCommand implements CommandExecutor, TabCompleter {
             CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             return (sender.hasPermission("tracesdeath.admin")
-                            ? Arrays.asList("list", "locate", "testpack")
+                            ? Arrays.asList("list", "locate", "testpack", "reload")
                             : Arrays.asList("list", "locate"))
                     .stream()
                             .filter(name -> name.startsWith(args[0].toLowerCase(Locale.ROOT)))

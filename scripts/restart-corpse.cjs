@@ -92,7 +92,7 @@ function totals(items) {
  return Object.fromEntries(Object.entries(result).sort());
 }
 async function checkMenuAndClaimAll() {
- assert.equal(bot.currentWindow.slots[6]?.name,'chest');
+ assert.equal(bot.currentWindow.slots[8]?.name,'chest');
  assert.equal(bot.currentWindow.slots[7]?.name,'clock');
  for(let i=9;i<18;i++) assert.equal(bot.currentWindow.slots[i]?.name,'black_stained_glass_pane');
  assert.equal(bot.currentWindow.slots[53]?.name,'stone','last hotbar slot');
@@ -100,7 +100,7 @@ async function checkMenuAndClaimAll() {
  const record=fs.readFileSync(path.join(directory,'plugins/TracesDeath/corpses',records[0]),'utf8');
  assert.match(record,/death-time: [1-9][0-9]+/);
  await bot.clickWindow(7,0,0);await sleep(200);
- assert(messages.some(m=>m.includes('死亡者 ID：CrashBot')));
+ assert(messages.some(m=>m.includes('死亡者：CrashBot')));
  assert(messages.some(m=>m.includes('死亡时间：')&&!m.includes('未记录')));
  bot.closeWindow(bot.currentWindow);await sleep(150);
  await command('item replace entity CrashBot armor.chest with golden_chestplate');
@@ -110,9 +110,9 @@ async function checkMenuAndClaimAll() {
   await command('item replace entity CrashBot hotbar.0 with gold_ingot 61');
  } else await command('item replace entity CrashBot hotbar.1 with nether_star 7');
  await open();
- const source=bot.currentWindow.slots.slice(0,54).filter((i,slot)=>i&&(slot<5||slot>=18)&&i.name!=='gray_stained_glass_pane');
+ const source=bot.currentWindow.slots.slice(0,54).filter((i,slot)=>i&&(slot<6||slot>=18)&&i.name!=='brown_stained_glass_pane');
  const expected=totals([...playerItems(),...source]);
- await bot.clickWindow(6,0,0);
+ await bot.clickWindow(8,0,0);
  await until(()=>!bot.currentWindow,'claim-all closes GUI');
  await sleep(120);
  const dropped=all('item').map(e=>e.getDroppedItem()).filter(Boolean);
@@ -155,8 +155,8 @@ async function checkMenuAndClaimAll() {
  await command('tp CrashBot 0.5 80 2.5');
  await command('save-all flush',1000);
  await open();
- assert.equal(bot.currentWindow.slots[45]?.count,12);
- for(const slot of [45,0,4,18]) {await bot.clickWindow(slot,0,0);await sleep(180);}
+ assert.equal(bot.currentWindow.slots[5]?.count,12);
+ for(const slot of [5,0,4,18]) {await bot.clickWindow(slot,0,0);await sleep(180);}
  const expected=snapshot('before-crash');
  await shutdown(true);
  await startServer();await connect();await sleep(1500);

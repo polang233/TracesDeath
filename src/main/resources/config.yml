@@ -1,9 +1,9 @@
-# 修改后完整重启服务器生效。
+# 修改后执行 /td reload 生效。
 corpse:
   # auto：支持时使用 Mannequin，其余使用箱子矿车。
   # mannequin：Paper 1.21.9+；tombstone：Paper 1.19.4+，需要客户端资源包。
   # chest_minecart：Bukkit/Spigot/Paper 1.12+。
-  # 选择 tombstone 后生成 tombstone.yml，可设置墓碑模型和 GUI 材质。
+  # 选择 tombstone 并重载后生成 tombstone.yml，可设置墓碑模型和 GUI 材质。
   type: auto
 
 loot:

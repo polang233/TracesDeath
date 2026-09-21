@@ -32,7 +32,7 @@ java {
 
 // GUI and tombstone assets share one resource pack for Minecraft 1.20+ clients.
 val bundledResourcePack by tasks.registering(Zip::class) {
-    archiveFileName.set("tracesdeath.zip")
+    archiveFileName.set("TracesDeath.zip")
     destinationDirectory.set(layout.buildDirectory.dir("generated/resource-packs"))
     from("resource-pack") { include("assets/**", "pack.png", "pack.mcmeta") }
     isPreserveFileTimestamps = false

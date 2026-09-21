@@ -1,6 +1,6 @@
 name: TracesDeath
 description: 玩家死亡遗体与原槽位物品领取
-version: '2.0.1'
+version: '2.1.0'
 authors: [Polang]
 website: https://github.com/PolangPlugin/TracesDeath
 main: cc.sbsj.mc.tracesdeath.TracesDeath
@@ -9,12 +9,12 @@ load: POSTWORLD
 commands:
   tracesdeath:
     description: 查看遗体位置
-    usage: /td list | /td locate | /td testpack [玩家]
+    usage: /td list | /td locate | /td reload | /td testpack [玩家]
     aliases: [td, deathtrace]
 permissions:
   tracesdeath.use:
     description: 死亡时生成遗体
     default: true
   tracesdeath.admin:
-    description: 查看所有遗体并绕过所有者限制
+    description: 管理遗体、重载配置及测试资源包
     default: op

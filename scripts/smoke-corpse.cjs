@@ -60,7 +60,7 @@ function expectSlot(slot, name, count) {
   expectSlot(0, 'diamond_helmet', 1);
   expectSlot(4, 'shield', 1);
   expectSlot(21, 'emerald', 5);
-  expectSlot(45, 'diamond', 12);
+  expectSlot(5, 'diamond', 12);
   assert.equal(entities('item').length, 0, 'no vanilla item drops');
   await close();
   await command('data get entity @e[type=mannequin,limit=1] pose');
@@ -74,11 +74,11 @@ function expectSlot(slot, name, count) {
   for (let i = 0; i < 27; i++) await command(`item replace entity @s inventory.${i} with stone 64`);
   await command('item replace entity @s hotbar.0 with diamond 61');
   await open();
-  await click(45);
-  expectSlot(45, 'diamond', 9);
+  await click(5);
+  expectSlot(5, 'diamond', 9);
   expectSlot(21, 'emerald', 5);
-  await click(45);
-  expectSlot(45, 'diamond', 9);
+  await click(5);
+  expectSlot(5, 'diamond', 9);
   await close();
   assert.equal(bot.inventory.items().filter(i => i.name === 'diamond').reduce((n, i) => n + i.count, 0), 64);
   await command('clear @s');
@@ -89,8 +89,8 @@ function expectSlot(slot, name, count) {
   await command('tp @s 0.5 80 2.5');
   await command('gamemode survival');
   await open();
-  expectSlot(45, 'diamond', 9);
-  for (const slot of [0, 4, 21, 45]) await click(slot);
+  expectSlot(5, 'diamond', 9);
+  for (const slot of [0, 4, 21, 5]) await click(slot);
   await until(() => entities('mannequin').length === 0 && entities('interaction').length === 0, 'empty corpse disappears');
   assert.equal(bot.currentWindow, null, 'GUI closes when empty');
   for (const [name, count] of [['diamond_helmet',1], ['shield',1], ['emerald',5], ['diamond',9]]) {
